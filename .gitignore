@@ -1,0 +1,9 @@
+# Ignorer les datasets
+*.json
+*.txt
+*.csv
+
+# Ignorer les environnements virtuels Python
+__pycache__/
+env_projet/
+venv/
