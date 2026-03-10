@@ -1,5 +1,5 @@
-Démarrage génération : 2026-03-10T14:33:11.946688
-Instances : 3000 (1/3 MESH + 1/3 SP + 1/3 ER)
+Démarrage génération : 2026-03-10T15:07:53.092323
+Instances : 1000 (1/3 MESH + 1/3 SP + 1/3 ER)
 Règle B: B_ref = L * 5.5
 Règle C: alpha 80%[0.6,1.4], 10%[0.1,0.4], 10%[2.0,3.0]
 H Mesh: [15,25] | H SP/ER: [5,20]
@@ -7,3 +7,19 @@ ER p: [0.30,0.45]
 Workers : 3
 ======================================================================
 
+
+Génération terminée : 2026-03-10T16:08:18.385168
+Temps écoulé : 1h 0m 25.3s
+Temps moyen/graphe : 3.63s
+Graphes/heure : 993
+
+RÉSULTATS FINAUX:
+  - Instances générées: 1000
+  - MESH: 333 | SP: 333 | ER: 334
+  - Fichier: dataset_hybrid_mesh_sp_er_v2_1000.json
+  - H: 5-25
+  - L: 1-10
+  - alpha: 0.10-3.00
+  - alpha regimes: normal=803, famine=102, abondance=95
+  - B: 0.57-62.68
+  - J*: 0.5914±0.4135
