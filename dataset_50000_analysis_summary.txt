@@ -1,0 +1,44 @@
+ANALYSE DATASET 50K - PROBABILITÉS DE DÉFAILLANCE
+
+Instances: 50000
+J* mean=0.624502 | median=0.797893 | p90=0.999069 | p99=1.000000
+
+Bandes de risque (part du dataset):
+- very_low_[0,0.1]: 21.52%
+- low_(0.1,0.3]: 4.80%
+- medium_(0.3,0.6]: 11.65%
+- high_(0.6,0.9]: 22.26%
+- very_high_(0.9,1.0]: 39.78%
+
+Corrélations avec J*:
+- corr(B, J_star): -0.04113255966894895
+- corr(H, J_star): 0.17549335783802986
+- corr(n_nodes, J_star): -0.03148428078827247
+- corr(n_edges, J_star): -0.16730734240925776
+
+Familles de topologies (mean J*):
+- er: count=16668, mean=0.802282, p50=0.900586, p90=0.998384, P(J*>=0.9)=50.14%
+- sp: count=16666, mean=0.661937, p50=0.912859, p90=0.999960, P(J*>=0.9)=51.39%
+- mesh: count=16666, mean=0.409266, p50=0.358311, p90=0.967648, P(J*>=0.9)=17.79%
+
+Segments clés:
+- high_H_and_small_network: count=3192, mean=0.735866, lift_vs_global=+0.111364, P(J*>=0.9)=58.90%
+- high_H_and_large_network: count=3471, mean=0.679063, lift_vs_global=+0.054561, P(J*>=0.9)=52.18%
+- small_budget_and_small_network: count=3169, mean=0.675888, lift_vs_global=+0.051386, P(J*>=0.9)=42.38%
+- small_budget_and_large_network: count=3501, mean=0.626977, lift_vs_global=+0.002475, P(J*>=0.9)=40.93%
+- large_budget_and_large_network: count=3481, mean=0.580550, lift_vs_global=-0.043952, P(J*>=0.9)=36.31%
+- low_H_and_large_network: count=3419, mean=0.503044, lift_vs_global=-0.121458, P(J*>=0.9)=20.09%
+
+Top 5 topologies les plus risquées (J* moyen):
+- er_n11_p0.2: mean=0.832892 (count=482)
+- er_n12_p0.2: mean=0.831858 (count=331)
+- er_n5_p0.3: mean=0.824693 (count=2066)
+- er_n4_p0.3: mean=0.823117 (count=2021)
+- er_n6_p0.3: mean=0.808932 (count=2433)
+
+Top 5 topologies les moins risquées (J* moyen):
+- mesh_2x4: mean=0.446063 (count=3407)
+- mesh_3x3: mean=0.440971 (count=3319)
+- mesh_2x3: mean=0.328617 (count=1598)
+- mesh_3x2: mean=0.316383 (count=2425)
+- mesh_2x2: mean=0.143077 (count=1649)

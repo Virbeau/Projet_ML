@@ -1,0 +1,6 @@
+# Ignorer tous les datasets
+*.json
+
+# (Optionnel mais recommandé) Ignorer aussi les dossiers virtuels Python
+__pycache__/env_projet/
+env_projet/
