@@ -12,3 +12,47 @@ Epoch 6/50, Train Loss: 4.9790, Val Loss: 4.3626, Benchmark Loss: 4.8013
 Epoch 7/50, Train Loss: 4.9783, Val Loss: 4.3617, Benchmark Loss: 4.7986
 Epoch 8/50, Train Loss: 4.9783, Val Loss: 4.3617, Benchmark Loss: 4.7991
 Epoch 9/50, Train Loss: 4.9773, Val Loss: 4.3616, Benchmark Loss: 4.8001
+Epoch 10/50, Train Loss: 4.9771, Val Loss: 4.3610, Benchmark Loss: 4.7962
+Epoch 11/50, Train Loss: 4.9766, Val Loss: 4.3609, Benchmark Loss: 4.7970
+Epoch 12/50, Train Loss: 4.9763, Val Loss: 4.3611, Benchmark Loss: 4.7995
+Epoch 13/50, Train Loss: 4.9761, Val Loss: 4.3603, Benchmark Loss: 4.7956
+Epoch 14/50, Train Loss: 4.9761, Val Loss: 4.3599, Benchmark Loss: 4.7957
+Epoch 15/50, Train Loss: 4.9758, Val Loss: 4.3598, Benchmark Loss: 4.7954
+Epoch 16/50, Train Loss: 4.9755, Val Loss: 4.3601, Benchmark Loss: 4.7977
+Epoch 17/50, Train Loss: 4.9748, Val Loss: 4.3594, Benchmark Loss: 4.7947
+Epoch 18/50, Train Loss: 4.9748, Val Loss: 4.3593, Benchmark Loss: 4.7941
+Epoch 19/50, Train Loss: 4.9746, Val Loss: 4.3596, Benchmark Loss: 4.7960
+Epoch 20/50, Train Loss: 4.9744, Val Loss: 4.3604, Benchmark Loss: 4.7937
+Epoch 21/50, Train Loss: 4.9743, Val Loss: 4.3596, Benchmark Loss: 4.7932
+Epoch 22/50, Train Loss: 4.9745, Val Loss: 4.3584, Benchmark Loss: 4.7944
+Epoch 23/50, Train Loss: 4.9742, Val Loss: 4.3580, Benchmark Loss: 4.7921
+Epoch 24/50, Train Loss: 4.9742, Val Loss: 4.3605, Benchmark Loss: 4.7998
+Epoch 25/50, Train Loss: 4.9737, Val Loss: 4.3583, Benchmark Loss: 4.7918
+Epoch 26/50, Train Loss: 4.9735, Val Loss: 4.3611, Benchmark Loss: 4.7943
+Epoch 27/50, Train Loss: 4.9736, Val Loss: 4.3574, Benchmark Loss: 4.7915
+Epoch 28/50, Train Loss: 4.9732, Val Loss: 4.3583, Benchmark Loss: 4.7933
+Epoch 29/50, Train Loss: 4.9732, Val Loss: 4.3575, Benchmark Loss: 4.7926
+Epoch 30/50, Train Loss: 4.9730, Val Loss: 4.3575, Benchmark Loss: 4.7911
+Epoch 31/50, Train Loss: 4.9730, Val Loss: 4.3580, Benchmark Loss: 4.7906
+Epoch 32/50, Train Loss: 4.9729, Val Loss: 4.3597, Benchmark Loss: 4.7913
+Epoch 33/50, Train Loss: 4.9728, Val Loss: 4.3582, Benchmark Loss: 4.7911
+Epoch 34/50, Train Loss: 4.9726, Val Loss: 4.3567, Benchmark Loss: 4.7903
+Epoch 35/50, Train Loss: 4.9723, Val Loss: 4.3577, Benchmark Loss: 4.7940
+Epoch 36/50, Train Loss: 4.9723, Val Loss: 4.3578, Benchmark Loss: 4.7897
+Epoch 37/50, Train Loss: 4.9723, Val Loss: 4.3568, Benchmark Loss: 4.7894
+Epoch 38/50, Train Loss: 4.9721, Val Loss: 4.3574, Benchmark Loss: 4.7942
+Epoch 39/50, Train Loss: 4.9720, Val Loss: 4.3572, Benchmark Loss: 4.7904
+Epoch 40/50, Train Loss: 4.9720, Val Loss: 4.3566, Benchmark Loss: 4.7906
+Epoch 41/50, Train Loss: 4.9719, Val Loss: 4.3570, Benchmark Loss: 4.7907
+Epoch 42/50, Train Loss: 4.9715, Val Loss: 4.3564, Benchmark Loss: 4.7914
+Epoch 43/50, Train Loss: 4.9716, Val Loss: 4.3571, Benchmark Loss: 4.7897
+Epoch 44/50, Train Loss: 4.9717, Val Loss: 4.3565, Benchmark Loss: 4.7891
+Epoch 45/50, Train Loss: 4.9715, Val Loss: 4.3564, Benchmark Loss: 4.7913
+Epoch 46/50, Train Loss: 4.9713, Val Loss: 4.3557, Benchmark Loss: 4.7903
+Epoch 47/50, Train Loss: 4.9709, Val Loss: 4.3571, Benchmark Loss: 4.7892
+Epoch 48/50, Train Loss: 4.9711, Val Loss: 4.3572, Benchmark Loss: 4.7900
+Epoch 49/50, Train Loss: 4.9710, Val Loss: 4.3571, Benchmark Loss: 4.7898
+Epoch 50/50, Train Loss: 4.9707, Val Loss: 4.3565, Benchmark Loss: 4.7897
+Benchmark MAE: 1.7119
+Modele sauvegarde: checkpoints/gine_b_repartition_v3.pt
+[WARN] Echec calcul deltaJ: name 'evaluate_industrial_regret' is not defined

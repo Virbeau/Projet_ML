@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch.nn import Sequential, Linear, ReLU, BatchNorm1d, Sigmoid
 from torch_geometric.data import Data, Dataset
 from torch_geometric.nn import GINEConv, global_add_pool
+import numpy as np
 
 
 TRAIN_JSON = "dataset_v3_10000.json"
@@ -30,6 +31,7 @@ MODEL_SAVE_PATH = "checkpoints/gine_b_repartition_v3.pt"
 COMPUTE_DELTAJ = True
 DELTAJ_N_SIMS = 10000
 DELTAJ_MAX_INSTANCES = None
+BUDGET_TOL = 1e-4
 
 
 def is_valid_instance(inst):
@@ -133,6 +135,8 @@ class ReliabilityDataset(Dataset):
         x[:, 8] = x[:, 8] / 25.0
 
         edges = inst["graph"]["edges"]
+        nodes = inst["graph"].get("nodes", list(range(len(inst["x"]))))
+        node_to_idx = {node_id: i for i, node_id in enumerate(nodes)}
         edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
         edge_attr = torch.ones((edge_index.size(1), 1), dtype=torch.float32)
 
@@ -146,7 +150,16 @@ class ReliabilityDataset(Dataset):
             y=y_graph,
             y_node=y_node,
         )
+
+        terminal_mask = torch.zeros(x.size(0), dtype=torch.bool)
+        for terminal in inst.get("terminals", []):
+            if terminal in node_to_idx:
+                terminal_mask[node_to_idx[terminal]] = True
+            elif isinstance(terminal, int) and 0 <= terminal < x.size(0):
+                terminal_mask[terminal] = True
+
         data.B = torch.tensor([inst["B"]], dtype=torch.float32)
+        data.terminal_mask = terminal_mask
         return data
 
 
@@ -186,7 +199,7 @@ class GINE_Allocation_Predictor(torch.nn.Module):
             # des nombres bruts (positifs ou négatifs), le Softmax gérera le reste.
         )
 
-    def forward(self, x, edge_index, edge_attr, batch, B_total):
+    def forward(self, x, edge_index, edge_attr, batch, B_total, terminal_mask=None):
         # 1. Message Passing
         x = self.conv1(x, edge_index, edge_attr)
         x = self.conv2(x, edge_index, edge_attr)
@@ -198,12 +211,127 @@ class GINE_Allocation_Predictor(torch.nn.Module):
         # Le softmax va transformer ces scores en pourcentages (entre 0 et 1)
         # Et il va garantir que la somme des pourcentages D'UN MÊME GRAPHE = 1.0
         alloc_probs = softmax(raw_scores, index=batch)
+
+        # Contrainte metier: aucun budget sur les terminaux (source/cible).
+        if terminal_mask is not None:
+            non_terminal = (~terminal_mask.bool()).float()
+            alloc_probs = alloc_probs * non_terminal
+
+            # Renormalisation par graphe pour conserver la contrainte de budget total.
+            sum_probs = global_add_pool(alloc_probs.view(-1, 1), batch).view(-1).clamp(min=1e-12)
+            alloc_probs = alloc_probs / sum_probs[batch]
         
         # 4. On multiplie ces pourcentages par le Vrai Budget du graphe
         B_broadcasted = B_total[batch]
         final_alloc = alloc_probs * B_broadcasted
         
         return final_alloc
+
+
+def _prepare_model_inputs_from_instance(inst):
+    """Prepare tensors exactly like ReliabilityDataset.__getitem__ for consistency."""
+    x = torch.tensor(inst["x"], dtype=torch.float32)
+    x[:, 1] = x[:, 1] / 10.0
+    x[:, 4] = x[:, 4] / 15.0
+    x[:, 5] = x[:, 5] / 15.0
+    x[:, 6] = x[:, 6] / 15.0
+    x[:, 7] = x[:, 7] / 65.0
+    x[:, 8] = x[:, 8] / 25.0
+
+    edge_index = torch.tensor(inst["graph"]["edges"], dtype=torch.long).t().contiguous()
+    edge_attr = torch.ones((edge_index.size(1), 1), dtype=torch.float32)
+    batch = torch.zeros(x.size(0), dtype=torch.long)
+    B_total = torch.tensor([inst["B"]], dtype=torch.float32)
+
+    nodes = inst["graph"].get("nodes", list(range(len(inst["x"]))))
+    node_to_idx = {node_id: i for i, node_id in enumerate(nodes)}
+    terminal_mask = torch.zeros(x.size(0), dtype=torch.bool)
+    for terminal in inst.get("terminals", []):
+        if terminal in node_to_idx:
+            terminal_mask[node_to_idx[terminal]] = True
+        elif isinstance(terminal, int) and 0 <= terminal < x.size(0):
+            terminal_mask[terminal] = True
+
+    return x, edge_index, edge_attr, batch, B_total, terminal_mask
+
+
+def _extract_raw_instances(dataset_or_instances):
+    if hasattr(dataset_or_instances, "instances"):
+        return dataset_or_instances.instances
+    return dataset_or_instances
+
+
+def evaluate_industrial_regret(model, dataset_or_instances, simulate_monte_carlo, n_sims=10000):
+    """
+    Évalue le sur-risque (Regret) généré par les choix du GNN.
+
+    Arguments:
+    - model: Ton modèle GINE entraîné (Tâche B)
+    - dataset_or_instances: ReliabilityDataset ou liste d'instances brutes
+    - simulate_monte_carlo: Ta fonction python qui simule un graphe
+    """
+    model.eval()
+    delta_j_abs = []
+    delta_j_rel = []
+    raw_instances = _extract_raw_instances(dataset_or_instances)
+
+    print("Calcul deltaJ...")
+
+    with torch.no_grad():
+        for idx, inst in enumerate(raw_instances):
+            x, edge_index, edge_attr, batch, B_total, terminal_mask = _prepare_model_inputs_from_instance(inst)
+
+            pi_gnn_tensor = model(x, edge_index, edge_attr, batch, B_total, terminal_mask)
+            pi_gnn = pi_gnn_tensor.cpu().numpy().tolist()
+
+            J_star = inst["J_star"]
+
+            inst_to_simulate = inst.copy()
+            inst_to_simulate["pi_evaluated"] = pi_gnn
+
+            J_gnn = simulate_monte_carlo(inst_to_simulate, n_sims=n_sims)
+
+            delta_abs = max(0.0, J_gnn - J_star)
+            delta_rel = (delta_abs / J_star) if J_star > 1e-12 else 0.0
+
+            delta_j_abs.append(delta_abs)
+            delta_j_rel.append(delta_rel)
+
+            if idx % 200 == 0:
+                print(f"deltaJ: {idx}/{len(raw_instances)}")
+
+    mean_delta_abs = float(np.mean(delta_j_abs)) if delta_j_abs else 0.0
+    max_delta_abs = float(np.max(delta_j_abs)) if delta_j_abs else 0.0
+    median_delta_abs = float(np.median(delta_j_abs)) if delta_j_abs else 0.0
+
+    mean_delta_rel = float(np.mean(delta_j_rel)) if delta_j_rel else 0.0
+    max_delta_rel = float(np.max(delta_j_rel)) if delta_j_rel else 0.0
+    median_delta_rel = float(np.median(delta_j_rel)) if delta_j_rel else 0.0
+
+    print(f"deltaJ | abs_mean={mean_delta_abs:.6f} | rel_mean={mean_delta_rel*100:.2f}%")
+
+    if wandb.run is not None:
+        wandb.log(
+            {
+                "deltaJ_abs_mean": mean_delta_abs,
+                "deltaJ_rel_mean": mean_delta_rel,
+                "deltaJ_num_instances": len(delta_j_abs),
+            }
+        )
+
+        wandb.summary["deltaJ_abs_mean"] = mean_delta_abs
+        wandb.summary["deltaJ_rel_mean"] = mean_delta_rel
+
+    return {
+        "delta_j_abs": delta_j_abs,
+        "delta_j_rel": delta_j_rel,
+        "mean_delta_abs": mean_delta_abs,
+        "median_delta_abs": median_delta_abs,
+        "max_delta_abs": max_delta_abs,
+        "mean_delta_rel": mean_delta_rel,
+        "median_delta_rel": median_delta_rel,
+        "max_delta_rel": max_delta_rel,
+    }
 
 
 if __name__ == "__main__":
@@ -228,6 +356,7 @@ if __name__ == "__main__":
             "compute_deltaJ": COMPUTE_DELTAJ,
             "deltaJ_n_sims": DELTAJ_N_SIMS,
             "deltaJ_max_instances": DELTAJ_MAX_INSTANCES,
+            "budget_tol": BUDGET_TOL,
         }
     )
 
@@ -247,8 +376,7 @@ if __name__ == "__main__":
         jstar_max=BENCHMARK_JSTAR_MAX,
     )
 
-    print(f"Train/val dataset: {len(train_val_dataset)} graphes")
-    print(f"Benchmark fixe: {len(benchmark_dataset)} graphes")
+    print(f"Datasets | train_val={len(train_val_dataset)} | benchmark={len(benchmark_dataset)}")
 
     train_size = int(TRAIN_VAL_SPLIT * len(train_val_dataset))
     val_size = len(train_val_dataset) - train_size
@@ -268,15 +396,77 @@ if __name__ == "__main__":
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    def evaluate(loader):
+    def evaluate_terminal_leakage(loader, tol=1e-10):
         model.eval()
-        total_loss = 0.0
+        max_terminal_alloc = 0.0
+        sum_terminal_alloc = 0.0
+        n_terminal_nodes = 0
+        n_non_zero = 0
+
         with torch.no_grad():
             for batch in loader:
-                pred = model(batch.x, batch.edge_index, batch.edge_attr, batch.batch, batch.B.view(-1))
-                batch_loss = criterion(pred.view(-1), batch.y_node.view(-1))
-                total_loss += batch_loss.item() * batch.num_nodes
-        return total_loss / max(1, sum(d.num_nodes for d in loader.dataset))
+                pred = model(
+                    batch.x,
+                    batch.edge_index,
+                    batch.edge_attr,
+                    batch.batch,
+                    batch.B.view(-1),
+                    batch.terminal_mask,
+                )
+
+                terminal_values = pred[batch.terminal_mask.bool()].abs()
+                if terminal_values.numel() == 0:
+                    continue
+
+                max_terminal_alloc = max(max_terminal_alloc, float(terminal_values.max().item()))
+                sum_terminal_alloc += float(terminal_values.sum().item())
+                n_terminal_nodes += int(terminal_values.numel())
+                n_non_zero += int((terminal_values > tol).sum().item())
+
+        mean_terminal_alloc = sum_terminal_alloc / max(1, n_terminal_nodes)
+        non_zero_rate = n_non_zero / max(1, n_terminal_nodes)
+        return {
+            "max_terminal_alloc": max_terminal_alloc,
+            "mean_terminal_alloc": mean_terminal_alloc,
+            "non_zero_rate": non_zero_rate,
+            "n_terminal_nodes": n_terminal_nodes,
+        }
+
+    def evaluate_budget_constraint(loader, tol=BUDGET_TOL):
+        model.eval()
+        violations = 0
+        n_graphs = 0
+        total_abs_err = 0.0
+        max_abs_err = 0.0
+
+        with torch.no_grad():
+            for batch in loader:
+                pred = model(
+                    batch.x,
+                    batch.edge_index,
+                    batch.edge_attr,
+                    batch.batch,
+                    batch.B.view(-1),
+                    batch.terminal_mask,
+                )
+                pred_sum = global_add_pool(pred.view(-1, 1), batch.batch).view(-1)
+                b_true = batch.B.view(-1)
+                abs_err = (pred_sum - b_true).abs()
+
+                violations += int((abs_err > tol).sum().item())
+                n_graphs += int(batch.num_graphs)
+                total_abs_err += float(abs_err.sum().item())
+                max_abs_err = max(max_abs_err, float(abs_err.max().item()))
+
+        mean_abs_err = total_abs_err / max(1, n_graphs)
+        violation_rate = violations / max(1, n_graphs)
+        return {
+            "violations": violations,
+            "n_graphs": n_graphs,
+            "violation_rate": violation_rate,
+            "mean_abs_err": mean_abs_err,
+            "max_abs_err": max_abs_err,
+        }
 
     # Entraînement du modèle
     for epoch in range(NUM_EPOCHS):
@@ -284,28 +474,20 @@ if __name__ == "__main__":
         total_loss = 0
         for data in train_loader:
             optimizer.zero_grad()
-            out = model(data.x, data.edge_index, data.edge_attr, data.batch, data.B.view(-1))
+            out = model(
+                data.x,
+                data.edge_index,
+                data.edge_attr,
+                data.batch,
+                data.B.view(-1),
+                data.terminal_mask,
+            )
             loss = criterion(out.view(-1), data.y_node.view(-1))
             loss.backward()
             optimizer.step()
             total_loss += loss.item() * data.num_nodes
-        train_loss = total_loss / max(1, sum(d.num_nodes for d in train_loader.dataset))
-        val_loss = evaluate(val_loader)
-        benchmark_loss = evaluate(benchmark_loader)
-
-        wandb.log({
-            "epoch": epoch + 1,
-            "train_loss": train_loss,
-            "val_loss": val_loss,
-            "benchmark_loss": benchmark_loss,
-        })
-
-        print(
-            f"Epoch {epoch+1}/{NUM_EPOCHS}, "
-            f"Train Loss: {train_loss:.4f}, "
-            f"Val Loss: {val_loss:.4f}, "
-            f"Benchmark Loss: {benchmark_loss:.4f}"
-        )
+        if (epoch + 1) % 10 == 0 or (epoch + 1) == NUM_EPOCHS:
+            print(f"Epoch {epoch+1}/{NUM_EPOCHS}")
     # Calcul de la MAE par noeud et envoi a wandb
     def evaluate_mae(loader):
         model.eval()
@@ -313,15 +495,48 @@ if __name__ == "__main__":
         total_nodes = 0
         with torch.no_grad():
             for batch in loader:
-                pred = model(batch.x, batch.edge_index, batch.edge_attr, batch.batch, batch.B.view(-1))
+                pred = model(
+                    batch.x,
+                    batch.edge_index,
+                    batch.edge_attr,
+                    batch.batch,
+                    batch.B.view(-1),
+                    batch.terminal_mask,
+                )
                 mae = F.l1_loss(pred.view(-1), batch.y_node.view(-1), reduction='sum')
                 total_mae += mae.item()
                 total_nodes += batch.num_nodes
         return total_mae / total_nodes
 
     benchmark_mae = evaluate_mae(benchmark_loader)
-    wandb.log({"benchmark_mae": benchmark_mae})
-    print(f"Benchmark MAE: {benchmark_mae:.4f}")
+
+    final_val_budget = evaluate_budget_constraint(val_loader)
+    final_benchmark_budget = evaluate_budget_constraint(benchmark_loader)
+    final_benchmark_terminal = evaluate_terminal_leakage(benchmark_loader)
+
+    wandb.log(
+        {
+            "benchmark_mae": benchmark_mae,
+            "budget_violation_rate": final_benchmark_budget["violation_rate"],
+            "budget_mean_abs_err": final_benchmark_budget["mean_abs_err"],
+            "budget_max_abs_err": final_benchmark_budget["max_abs_err"],
+            "terminal_alloc_max": final_benchmark_terminal["max_terminal_alloc"],
+        }
+    )
+
+    wandb.summary["benchmark_mae"] = benchmark_mae
+    wandb.summary["budget_violation_rate"] = final_benchmark_budget["violation_rate"]
+    wandb.summary["budget_mean_abs_err"] = final_benchmark_budget["mean_abs_err"]
+    wandb.summary["budget_max_abs_err"] = final_benchmark_budget["max_abs_err"]
+    wandb.summary["terminal_alloc_max"] = final_benchmark_terminal["max_terminal_alloc"]
+
+    print(
+        "Final metrics | "
+        f"node_mae={benchmark_mae:.4f} | "
+        f"budget_viol={final_benchmark_budget['violations']}/{final_benchmark_budget['n_graphs']} "
+        f"(mean_err={final_benchmark_budget['mean_abs_err']:.2e}) | "
+        f"terminal_max={final_benchmark_terminal['max_terminal_alloc']:.2e}"
+    )
 
     if SAVE_MODEL:
         import os
@@ -353,10 +568,7 @@ if __name__ == "__main__":
                 simulate_monte_carlo=simulate_monte_carlo,
                 n_sims=DELTAJ_N_SIMS,
             )
-            print(
-                f"deltaJ termine | abs_mean={delta_metrics['mean_delta_abs']:.6f} | "
-                f"rel_mean={delta_metrics['mean_delta_rel']*100:.2f}%"
-            )
+            print(f"deltaJ done | abs_mean={delta_metrics['mean_delta_abs']:.6f} | rel_mean={delta_metrics['mean_delta_rel']*100:.2f}%")
         except Exception as exc:
             print(f"[WARN] Echec calcul deltaJ: {exc}")
             if wandb.run is not None:
@@ -365,135 +577,3 @@ if __name__ == "__main__":
 
     wandb.finish()
 
-
-#Evaluation du deltaJ
-import numpy as np
-
-def _prepare_model_inputs_from_instance(inst):
-    """Prepare tensors exactly like ReliabilityDataset.__getitem__ for consistency."""
-    x = torch.tensor(inst["x"], dtype=torch.float32)
-    x[:, 1] = x[:, 1] / 10.0
-    x[:, 4] = x[:, 4] / 15.0
-    x[:, 5] = x[:, 5] / 15.0
-    x[:, 6] = x[:, 6] / 15.0
-    x[:, 7] = x[:, 7] / 65.0
-    x[:, 8] = x[:, 8] / 25.0
-
-    edge_index = torch.tensor(inst["graph"]["edges"], dtype=torch.long).t().contiguous()
-    edge_attr = torch.ones((edge_index.size(1), 1), dtype=torch.float32)
-    batch = torch.zeros(x.size(0), dtype=torch.long)
-    B_total = torch.tensor([inst["B"]], dtype=torch.float32)
-    return x, edge_index, edge_attr, batch, B_total
-
-
-def _extract_raw_instances(dataset_or_instances):
-    if hasattr(dataset_or_instances, "instances"):
-        return dataset_or_instances.instances
-    return dataset_or_instances
-
-
-def evaluate_industrial_regret(model, dataset_or_instances, simulate_monte_carlo, n_sims=10000):
-    """
-    Évalue le sur-risque (Regret) généré par les choix du GNN.
-    
-    Arguments:
-    - model: Ton modèle GINE entraîné (Tâche B)
-    - dataset_or_instances: ReliabilityDataset ou liste d'instances brutes
-    - simulate_monte_carlo: Ta fonction python qui simule un graphe
-    """
-    model.eval() # Mode évaluation (désactive les gradients)
-    delta_j_abs = []
-    delta_j_rel = []
-    raw_instances = _extract_raw_instances(dataset_or_instances)
-    
-    print("Calcul deltaJ en cours (Monte-Carlo)...")
-    
-    with torch.no_grad():
-        for idx, inst in enumerate(raw_instances):
-            # 1. Formater le graphe pour le GNN avec le meme preprocessing qu'en training
-            x, edge_index, edge_attr, batch, B_total = _prepare_model_inputs_from_instance(inst)
-            
-            # 2. Le GNN fait sa prédiction d'allocation
-            pi_gnn_tensor = model(x, edge_index, edge_attr, batch, B_total)
-            pi_gnn = pi_gnn_tensor.cpu().numpy().tolist()
-            
-            # 3. La Vérité Absolue (déjà calculée par le solveur)
-            J_star = inst['J_star']
-            
-            # 4. L'Épreuve du feu : On donne la politique du GNN au simulateur
-            # /!\ Adapte cette ligne selon comment ton simulateur lit l'allocation /!\
-            # Ici, on remplace virtuellement l'allocation optimale par celle du GNN
-            inst_to_simulate = inst.copy()
-            inst_to_simulate['pi_evaluated'] = pi_gnn 
-            
-            # On lance 10 000 tirages pour avoir une vraie précision physique
-            J_gnn = simulate_monte_carlo(inst_to_simulate, n_sims=n_sims)
-            
-            # 5. Calcul de deltaJ
-            # J* = risque optimal (plus petit est meilleur), donc sur-risque = J_gnn - J_star
-            delta_abs = J_gnn - J_star
-            
-            # Astuce : Comme Monte-Carlo a une micro-marge d'erreur, il se peut
-            # que J_gnn soit très légèrement inférieur à J_star (ex: -0.001).
-            # On force le sur-risque à 0 dans ce cas pour ne pas fausser la moyenne.
-            delta_abs = max(0.0, delta_abs)
-
-            if J_star > 1e-12:
-                delta_rel = delta_abs / J_star
-            else:
-                delta_rel = 0.0
-
-            delta_j_abs.append(delta_abs)
-            delta_j_rel.append(delta_rel)
-            
-            if idx % 100 == 0:
-                print(f"Progression deltaJ: {idx}/{len(raw_instances)}")
-
-    # --- RÉSULTATS ---
-    mean_delta_abs = float(np.mean(delta_j_abs)) if delta_j_abs else 0.0
-    max_delta_abs = float(np.max(delta_j_abs)) if delta_j_abs else 0.0
-    median_delta_abs = float(np.median(delta_j_abs)) if delta_j_abs else 0.0
-
-    mean_delta_rel = float(np.mean(delta_j_rel)) if delta_j_rel else 0.0
-    max_delta_rel = float(np.max(delta_j_rel)) if delta_j_rel else 0.0
-    median_delta_rel = float(np.median(delta_j_rel)) if delta_j_rel else 0.0
-    
-    print(
-        "deltaJ | "
-        f"abs(mean/med/max)={mean_delta_abs:.6f}/{median_delta_abs:.6f}/{max_delta_abs:.6f} | "
-        f"rel%(mean/med/max)={mean_delta_rel*100:.2f}/{median_delta_rel*100:.2f}/{max_delta_rel*100:.2f}"
-    )
-
-    if wandb.run is not None:
-        wandb.log(
-            {
-                "deltaJ_abs_mean": mean_delta_abs,
-                "deltaJ_abs_median": median_delta_abs,
-                "deltaJ_abs_max": max_delta_abs,
-                "deltaJ_rel_mean": mean_delta_rel,
-                "deltaJ_rel_median": median_delta_rel,
-                "deltaJ_rel_max": max_delta_rel,
-                "deltaJ_abs_hist": wandb.Histogram(np.array(delta_j_abs)),
-                "deltaJ_rel_hist": wandb.Histogram(np.array(delta_j_rel)),
-                "deltaJ_num_instances": len(delta_j_abs),
-            }
-        )
-
-        wandb.summary["deltaJ_abs_mean"] = mean_delta_abs
-        wandb.summary["deltaJ_abs_median"] = median_delta_abs
-        wandb.summary["deltaJ_abs_max"] = max_delta_abs
-        wandb.summary["deltaJ_rel_mean"] = mean_delta_rel
-        wandb.summary["deltaJ_rel_median"] = median_delta_rel
-        wandb.summary["deltaJ_rel_max"] = max_delta_rel
-
-    return {
-        "delta_j_abs": delta_j_abs,
-        "delta_j_rel": delta_j_rel,
-        "mean_delta_abs": mean_delta_abs,
-        "median_delta_abs": median_delta_abs,
-        "max_delta_abs": max_delta_abs,
-        "mean_delta_rel": mean_delta_rel,
-        "median_delta_rel": median_delta_rel,
-        "max_delta_rel": max_delta_rel,
-    }
-    

@@ -1,0 +1,6 @@
+[ReliabilityDataset] 985 instances invalides ignorees sur 10000
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 472 / 908
+Datasets | train_val=9015 | benchmark=436
+Epoch 10/50
+Epoch 20/50
