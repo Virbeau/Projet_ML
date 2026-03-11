@@ -1,0 +1,21 @@
+Epoch 1/20, Train Loss: 0.0815, Test Loss: 0.0630
+Epoch 2/20, Train Loss: 0.0397, Test Loss: 0.0255
+Epoch 3/20, Train Loss: 0.0291, Test Loss: 0.0293
+Epoch 4/20, Train Loss: 0.0250, Test Loss: 0.0201
+Epoch 5/20, Train Loss: 0.0221, Test Loss: 0.0186
+Epoch 6/20, Train Loss: 0.0199, Test Loss: 0.0242
+Epoch 7/20, Train Loss: 0.0186, Test Loss: 0.0139
+Epoch 8/20, Train Loss: 0.0174, Test Loss: 0.0200
+Epoch 9/20, Train Loss: 0.0159, Test Loss: 0.0132
+Epoch 10/20, Train Loss: 0.0159, Test Loss: 0.0230
+Epoch 11/20, Train Loss: 0.0147, Test Loss: 0.0121
+Epoch 12/20, Train Loss: 0.0143, Test Loss: 0.0117
+Epoch 13/20, Train Loss: 0.0137, Test Loss: 0.0106
+Epoch 14/20, Train Loss: 0.0133, Test Loss: 0.0193
+Epoch 15/20, Train Loss: 0.0128, Test Loss: 0.0225
+Epoch 16/20, Train Loss: 0.0126, Test Loss: 0.0109
+Epoch 17/20, Train Loss: 0.0116, Test Loss: 0.0146
+Epoch 18/20, Train Loss: 0.0109, Test Loss: 0.0171
+Epoch 19/20, Train Loss: 0.0112, Test Loss: 0.0137
+Epoch 20/20, Train Loss: 0.0104, Test Loss: 0.0099
+Final Test Loss: 0.0099

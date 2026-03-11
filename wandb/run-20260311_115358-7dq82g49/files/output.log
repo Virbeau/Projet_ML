@@ -1,0 +1,12 @@
+Dataset chargé avec 1000 graphes !
+Epoch 1/10, Train Loss: 0.1719, Test Loss: 0.1724
+Epoch 2/10, Train Loss: 0.1383, Test Loss: 0.1292
+Epoch 3/10, Train Loss: 0.0846, Test Loss: 0.0797
+Epoch 4/10, Train Loss: 0.0482, Test Loss: 0.0438
+Epoch 5/10, Train Loss: 0.0347, Test Loss: 0.0377
+Epoch 6/10, Train Loss: 0.0367, Test Loss: 0.0366
+Epoch 7/10, Train Loss: 0.0312, Test Loss: 0.0343
+Epoch 8/10, Train Loss: 0.0270, Test Loss: 0.0293
+Epoch 9/10, Train Loss: 0.0278, Test Loss: 0.0455
+Epoch 10/10, Train Loss: 0.0225, Test Loss: 0.0404
+Final Test Loss: 0.0404

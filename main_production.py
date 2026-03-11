@@ -7,6 +7,7 @@ import random
 import time
 import sys
 import os
+import argparse
 
 # Tentative d'import de tqdm, fallback sinon
 try:
@@ -161,8 +162,31 @@ def process_single_instance(args):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Génération dataset hybride mesh/sp/er (format v2)")
+    parser.add_argument("--n-instances", type=int, default=1000, help="Nombre total d'instances à générer")
+    parser.add_argument("--seed", type=int, default=42, help="Seed globale pour l'échantillonnage des tâches")
+    parser.add_argument(
+        "--out-path",
+        type=str,
+        default="dataset_hybrid_mesh_sp_er_v2_1000.json",
+        help="Chemin du fichier JSON de sortie",
+    )
+    parser.add_argument(
+        "--log-file",
+        type=str,
+        default="generation_progress.log",
+        help="Fichier de log de progression",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="Nombre de workers (défaut: min(3, cpu_count(), n_instances))",
+    )
+    args = parser.parse_args()
+
     # ========== CONFIGURATION ==========
-    n_instances = 1000
+    n_instances = args.n_instances
 
     # ===== PLAGES POUR H (B est désormais calculé via règles B/C) =====
     H_default_min, H_default_max = 5, 20      # SP / ER
@@ -227,7 +251,7 @@ def main():
     )
     
     # ========== GÉNÉRATION DES TÂCHES ==========
-    random.seed(42)
+    random.seed(args.seed)
     tasks = []
     
     # Génération des tâches MESH (première tercio)
@@ -253,8 +277,11 @@ def main():
     random.shuffle(tasks)
     
     # ========== PARALLÉLISATION AVEC SUIVI ==========
-    n_workers = min(3, cpu_count(), n_instances)
-    log_file = "generation_progress.log"
+    if args.workers is None:
+        n_workers = min(3, cpu_count(), n_instances)
+    else:
+        n_workers = max(1, min(args.workers, cpu_count(), n_instances))
+    log_file = args.log_file
     
     # Ouverture du fichier log
     with open(log_file, "w") as log:
@@ -300,7 +327,7 @@ def main():
         log.write(f"Graphes/heure : {n_instances/(elapsed_time/3600):.0f}\n")
     
     # ========== SAUVEGARDE ==========
-    out_path = "dataset_hybrid_mesh_sp_er_v2_1000.json"
+    out_path = args.out_path
     
     with open(out_path, "w") as f:
         json.dump({

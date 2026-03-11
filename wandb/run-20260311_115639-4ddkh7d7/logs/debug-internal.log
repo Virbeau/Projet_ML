@@ -1,0 +1,18 @@
+{"time":"2026-03-11T11:56:40.245587425+01:00","level":"INFO","msg":"wandb-core"}
+{"time":"2026-03-11T11:56:40.246436111+01:00","level":"INFO","msg":"stream: starting","core version":"0.25.1"}
+{"time":"2026-03-11T11:56:40.508819567+01:00","level":"INFO","msg":"stream: created new stream","id":"4ddkh7d7"}
+{"time":"2026-03-11T11:56:40.508947658+01:00","level":"INFO","msg":"handler: started"}
+{"time":"2026-03-11T11:56:40.509276402+01:00","level":"INFO","msg":"stream: started"}
+{"time":"2026-03-11T11:56:40.509257131+01:00","level":"INFO","msg":"writer: started","stream_id":"4ddkh7d7"}
+{"time":"2026-03-11T11:56:40.509318654+01:00","level":"INFO","msg":"sender: started"}
+{"time":"2026-03-11T11:56:44.481330025+01:00","level":"INFO","msg":"filestream: sending request","total_files":1,"console_offset":0,"console_lines":1}
+{"time":"2026-03-11T11:56:45.22693106+01:00","level":"INFO","msg":"filestream: request sent","status":"200 OK"}
+{"time":"2026-03-11T11:56:50.367476656+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-03-11T11:56:50.367870332+01:00","level":"INFO","msg":"filestream: sending request","total_files":3,"history_offset":0,"history_lines":10,"console_offset":1,"console_lines":11,"uploaded_len":5,"complete":true,"exit_code":0}
+{"time":"2026-03-11T11:56:51.322208442+01:00","level":"INFO","msg":"filestream: request sent","status":"200 OK"}
+{"time":"2026-03-11T11:56:51.324706598+01:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-03-11T11:56:51.338735311+01:00","level":"INFO","msg":"stream: closing"}
+{"time":"2026-03-11T11:56:51.338763102+01:00","level":"INFO","msg":"handler: closed"}
+{"time":"2026-03-11T11:56:51.338815322+01:00","level":"INFO","msg":"sender: closed"}
+{"time":"2026-03-11T11:56:51.338874902+01:00","level":"INFO","msg":"stream: closed"}
+{"time":"2026-03-11T11:56:51.338828369+01:00","level":"WARN","msg":"runwork: ignoring record after close","work":{"Work":{"Record":{"RecordType":{"Exit":{"exit_code":1}},"control":{"always_send":true}}},"TBHandler":{}}}

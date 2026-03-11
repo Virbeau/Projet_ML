@@ -1,0 +1,37 @@
+_wandb:
+    value:
+        cli_version: 0.25.1
+        e:
+            0pa8k75le7wp3hjqhfp8b4d9ijfhguy5:
+                codePath: run_wandb.py
+                codePathLocal: run_wandb.py
+                email: louis.virbel@imt-atlantique.net
+                executable: /users/local/l24virbe/Projet_ML/env_projet/bin/python3
+                git:
+                    commit: 8fb0ad14b381376885e86d35e615d0576af8c656
+                    remote: https://github.com/Virbeau/Projet_ML.git
+                host: sl-tp-br-506
+                os: Linux-6.8.0-101-generic-x86_64-with-glibc2.39
+                program: /users/local/l24virbe/Projet_ML/run_wandb.py
+                python: CPython 3.12.3
+                root: /users/local/l24virbe/Projet_ML
+                startedAt: "2026-03-11T10:42:34.112822Z"
+                writerId: 0pa8k75le7wp3hjqhfp8b4d9ijfhguy5
+        m: []
+        python_version: 3.12.3
+        t:
+            "3":
+                - 2
+                - 16
+            "4": 3.12.3
+            "5": 0.25.1
+            "12": 0.25.1
+            "13": linux-x86_64
+architecture:
+    value: CNN
+dataset:
+    value: CIFAR-100
+epochs:
+    value: 10
+learning_rate:
+    value: 0.02

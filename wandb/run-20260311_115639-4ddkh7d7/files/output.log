@@ -1,0 +1,12 @@
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+Epoch 1/10, Train Loss: 0.1654, Test Loss: 0.1439
+Epoch 2/10, Train Loss: 0.1223, Test Loss: 0.0978
+Epoch 3/10, Train Loss: 0.0829, Test Loss: 0.0832
+Epoch 4/10, Train Loss: 0.0647, Test Loss: 0.0996
+Epoch 5/10, Train Loss: 0.0606, Test Loss: 0.0747
+Epoch 6/10, Train Loss: 0.0526, Test Loss: 0.0647
+Epoch 7/10, Train Loss: 0.0513, Test Loss: 0.0752
+Epoch 8/10, Train Loss: 0.0458, Test Loss: 0.0579
+Epoch 9/10, Train Loss: 0.0400, Test Loss: 0.0698
+Epoch 10/10, Train Loss: 0.0416, Test Loss: 0.0881
+Final Test Loss: 0.0881
