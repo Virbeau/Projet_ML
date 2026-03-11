@@ -1,0 +1,56 @@
+[ReliabilityDataset] 985 instances invalides ignorees sur 10000
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 472 / 908
+Train/val dataset: 9015 graphes
+Benchmark fixe: 436 graphes
+Epoch 1/50, Train Loss: 5.0087, Val Loss: 4.3733, Benchmark Loss: 4.8190
+Epoch 2/50, Train Loss: 4.9867, Val Loss: 4.3685, Benchmark Loss: 4.8121
+Epoch 3/50, Train Loss: 4.9834, Val Loss: 4.3673, Benchmark Loss: 4.8129
+Epoch 4/50, Train Loss: 4.9818, Val Loss: 4.3651, Benchmark Loss: 4.8050
+Epoch 5/50, Train Loss: 4.9801, Val Loss: 4.3630, Benchmark Loss: 4.8036
+Epoch 6/50, Train Loss: 4.9792, Val Loss: 4.3643, Benchmark Loss: 4.8040
+Epoch 7/50, Train Loss: 4.9786, Val Loss: 4.3615, Benchmark Loss: 4.8004
+Epoch 8/50, Train Loss: 4.9776, Val Loss: 4.3609, Benchmark Loss: 4.7998
+Epoch 9/50, Train Loss: 4.9778, Val Loss: 4.3641, Benchmark Loss: 4.8076
+Epoch 10/50, Train Loss: 4.9772, Val Loss: 4.3620, Benchmark Loss: 4.8047
+Epoch 11/50, Train Loss: 4.9763, Val Loss: 4.3606, Benchmark Loss: 4.8000
+Epoch 12/50, Train Loss: 4.9761, Val Loss: 4.3609, Benchmark Loss: 4.7999
+Epoch 13/50, Train Loss: 4.9755, Val Loss: 4.3619, Benchmark Loss: 4.7983
+Epoch 14/50, Train Loss: 4.9754, Val Loss: 4.3603, Benchmark Loss: 4.7994
+Epoch 15/50, Train Loss: 4.9755, Val Loss: 4.3594, Benchmark Loss: 4.7985
+Epoch 16/50, Train Loss: 4.9746, Val Loss: 4.3597, Benchmark Loss: 4.7947
+Epoch 17/50, Train Loss: 4.9747, Val Loss: 4.3611, Benchmark Loss: 4.8016
+Epoch 18/50, Train Loss: 4.9743, Val Loss: 4.3585, Benchmark Loss: 4.7955
+Epoch 19/50, Train Loss: 4.9740, Val Loss: 4.3589, Benchmark Loss: 4.7968
+Epoch 20/50, Train Loss: 4.9739, Val Loss: 4.3590, Benchmark Loss: 4.7960
+Epoch 21/50, Train Loss: 4.9739, Val Loss: 4.3581, Benchmark Loss: 4.7942
+Epoch 22/50, Train Loss: 4.9735, Val Loss: 4.3582, Benchmark Loss: 4.7956
+Epoch 23/50, Train Loss: 4.9737, Val Loss: 4.3594, Benchmark Loss: 4.7933
+Epoch 24/50, Train Loss: 4.9733, Val Loss: 4.3587, Benchmark Loss: 4.7964
+Epoch 25/50, Train Loss: 4.9732, Val Loss: 4.3584, Benchmark Loss: 4.7922
+Epoch 26/50, Train Loss: 4.9728, Val Loss: 4.3575, Benchmark Loss: 4.7930
+Epoch 27/50, Train Loss: 4.9729, Val Loss: 4.3581, Benchmark Loss: 4.7949
+Epoch 28/50, Train Loss: 4.9727, Val Loss: 4.3573, Benchmark Loss: 4.7930
+Epoch 29/50, Train Loss: 4.9725, Val Loss: 4.3574, Benchmark Loss: 4.7937
+Epoch 30/50, Train Loss: 4.9725, Val Loss: 4.3586, Benchmark Loss: 4.7921
+Epoch 31/50, Train Loss: 4.9723, Val Loss: 4.3577, Benchmark Loss: 4.7931
+Epoch 32/50, Train Loss: 4.9722, Val Loss: 4.3572, Benchmark Loss: 4.7929
+Epoch 33/50, Train Loss: 4.9722, Val Loss: 4.3569, Benchmark Loss: 4.7936
+Epoch 34/50, Train Loss: 4.9720, Val Loss: 4.3572, Benchmark Loss: 4.7934
+Epoch 35/50, Train Loss: 4.9720, Val Loss: 4.3567, Benchmark Loss: 4.7912
+Epoch 36/50, Train Loss: 4.9716, Val Loss: 4.3575, Benchmark Loss: 4.7924
+Epoch 37/50, Train Loss: 4.9715, Val Loss: 4.3571, Benchmark Loss: 4.7935
+Epoch 38/50, Train Loss: 4.9716, Val Loss: 4.3577, Benchmark Loss: 4.7921
+Epoch 39/50, Train Loss: 4.9714, Val Loss: 4.3565, Benchmark Loss: 4.7921
+Epoch 40/50, Train Loss: 4.9712, Val Loss: 4.3567, Benchmark Loss: 4.7925
+Epoch 41/50, Train Loss: 4.9714, Val Loss: 4.3563, Benchmark Loss: 4.7924
+Epoch 42/50, Train Loss: 4.9713, Val Loss: 4.3567, Benchmark Loss: 4.7926
+Epoch 43/50, Train Loss: 4.9709, Val Loss: 4.3567, Benchmark Loss: 4.7922
+Epoch 44/50, Train Loss: 4.9708, Val Loss: 4.3568, Benchmark Loss: 4.7938
+Epoch 45/50, Train Loss: 4.9706, Val Loss: 4.3574, Benchmark Loss: 4.7946
+Epoch 46/50, Train Loss: 4.9706, Val Loss: 4.3566, Benchmark Loss: 4.7927
+Epoch 47/50, Train Loss: 4.9706, Val Loss: 4.3563, Benchmark Loss: 4.7912
+Epoch 48/50, Train Loss: 4.9703, Val Loss: 4.3570, Benchmark Loss: 4.7943
+Epoch 49/50, Train Loss: 4.9705, Val Loss: 4.3561, Benchmark Loss: 4.7926
+Epoch 50/50, Train Loss: 4.9701, Val Loss: 4.3566, Benchmark Loss: 4.7926
+Benchmark MAE: 1.7119

@@ -1,0 +1,58 @@
+[ReliabilityDataset] 985 instances invalides ignorees sur 10000
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 472 / 908
+Train/val dataset: 9015 graphes
+Benchmark fixe: 436 graphes
+Epoch 1/50, Train Loss: 0.0776, Val Loss: 0.0407, Benchmark Loss: 0.0587
+Epoch 2/50, Train Loss: 0.0266, Val Loss: 0.0189, Benchmark Loss: 0.0329
+Epoch 3/50, Train Loss: 0.0183, Val Loss: 0.0249, Benchmark Loss: 0.0571
+Epoch 4/50, Train Loss: 0.0127, Val Loss: 0.0509, Benchmark Loss: 0.0802
+Epoch 5/50, Train Loss: 0.0119, Val Loss: 0.0094, Benchmark Loss: 0.0176
+Epoch 6/50, Train Loss: 0.0103, Val Loss: 0.0218, Benchmark Loss: 0.0335
+Epoch 7/50, Train Loss: 0.0097, Val Loss: 0.0095, Benchmark Loss: 0.0165
+Epoch 8/50, Train Loss: 0.0089, Val Loss: 0.0109, Benchmark Loss: 0.0182
+Epoch 9/50, Train Loss: 0.0070, Val Loss: 0.0094, Benchmark Loss: 0.0158
+Epoch 10/50, Train Loss: 0.0082, Val Loss: 0.0077, Benchmark Loss: 0.0137
+Epoch 11/50, Train Loss: 0.0066, Val Loss: 0.0061, Benchmark Loss: 0.0124
+Epoch 12/50, Train Loss: 0.0063, Val Loss: 0.0073, Benchmark Loss: 0.0148
+Epoch 13/50, Train Loss: 0.0059, Val Loss: 0.0090, Benchmark Loss: 0.0151
+Epoch 14/50, Train Loss: 0.0059, Val Loss: 0.0062, Benchmark Loss: 0.0131
+Epoch 15/50, Train Loss: 0.0056, Val Loss: 0.0059, Benchmark Loss: 0.0126
+Epoch 16/50, Train Loss: 0.0052, Val Loss: 0.0059, Benchmark Loss: 0.0125
+Epoch 17/50, Train Loss: 0.0051, Val Loss: 0.0050, Benchmark Loss: 0.0101
+Epoch 18/50, Train Loss: 0.0053, Val Loss: 0.0077, Benchmark Loss: 0.0202
+Epoch 19/50, Train Loss: 0.0044, Val Loss: 0.0070, Benchmark Loss: 0.0121
+Epoch 20/50, Train Loss: 0.0044, Val Loss: 0.0043, Benchmark Loss: 0.0100
+Epoch 21/50, Train Loss: 0.0042, Val Loss: 0.0048, Benchmark Loss: 0.0094
+Epoch 22/50, Train Loss: 0.0040, Val Loss: 0.0044, Benchmark Loss: 0.0094
+Epoch 23/50, Train Loss: 0.0044, Val Loss: 0.0117, Benchmark Loss: 0.0256
+Epoch 24/50, Train Loss: 0.0040, Val Loss: 0.0073, Benchmark Loss: 0.0161
+Epoch 25/50, Train Loss: 0.0043, Val Loss: 0.0037, Benchmark Loss: 0.0082
+Epoch 26/50, Train Loss: 0.0039, Val Loss: 0.0040, Benchmark Loss: 0.0100
+Epoch 27/50, Train Loss: 0.0039, Val Loss: 0.0042, Benchmark Loss: 0.0097
+Epoch 28/50, Train Loss: 0.0036, Val Loss: 0.0052, Benchmark Loss: 0.0105
+Epoch 29/50, Train Loss: 0.0035, Val Loss: 0.0038, Benchmark Loss: 0.0081
+Epoch 30/50, Train Loss: 0.0031, Val Loss: 0.0066, Benchmark Loss: 0.0127
+Epoch 31/50, Train Loss: 0.0033, Val Loss: 0.0055, Benchmark Loss: 0.0098
+Epoch 32/50, Train Loss: 0.0031, Val Loss: 0.0047, Benchmark Loss: 0.0089
+Epoch 33/50, Train Loss: 0.0033, Val Loss: 0.0043, Benchmark Loss: 0.0079
+Epoch 34/50, Train Loss: 0.0029, Val Loss: 0.0035, Benchmark Loss: 0.0075
+Epoch 35/50, Train Loss: 0.0030, Val Loss: 0.0041, Benchmark Loss: 0.0088
+Epoch 36/50, Train Loss: 0.0031, Val Loss: 0.0041, Benchmark Loss: 0.0082
+Epoch 37/50, Train Loss: 0.0025, Val Loss: 0.0041, Benchmark Loss: 0.0077
+Epoch 38/50, Train Loss: 0.0029, Val Loss: 0.0051, Benchmark Loss: 0.0138
+Epoch 39/50, Train Loss: 0.0029, Val Loss: 0.0048, Benchmark Loss: 0.0110
+Epoch 40/50, Train Loss: 0.0028, Val Loss: 0.0042, Benchmark Loss: 0.0093
+Epoch 41/50, Train Loss: 0.0027, Val Loss: 0.0038, Benchmark Loss: 0.0083
+Epoch 42/50, Train Loss: 0.0030, Val Loss: 0.0066, Benchmark Loss: 0.0123
+Epoch 43/50, Train Loss: 0.0027, Val Loss: 0.0029, Benchmark Loss: 0.0072
+Epoch 44/50, Train Loss: 0.0027, Val Loss: 0.0034, Benchmark Loss: 0.0078
+Epoch 45/50, Train Loss: 0.0026, Val Loss: 0.0036, Benchmark Loss: 0.0085
+Epoch 46/50, Train Loss: 0.0027, Val Loss: 0.0035, Benchmark Loss: 0.0087
+Epoch 47/50, Train Loss: 0.0026, Val Loss: 0.0030, Benchmark Loss: 0.0072
+Epoch 48/50, Train Loss: 0.0028, Val Loss: 0.0052, Benchmark Loss: 0.0125
+Epoch 49/50, Train Loss: 0.0022, Val Loss: 0.0035, Benchmark Loss: 0.0077
+Epoch 50/50, Train Loss: 0.0025, Val Loss: 0.0036, Benchmark Loss: 0.0080
+=== Évaluation finale sur le benchmark fixe ===
+MSE : 0.0080
+MAE : 0.0607

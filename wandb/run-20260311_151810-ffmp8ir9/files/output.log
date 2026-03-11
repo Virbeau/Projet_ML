@@ -1,0 +1,57 @@
+[ReliabilityDataset] 985 instances invalides ignorees sur 10000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 4816 / 9015
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 472 / 908
+Train/val dataset: 4199 graphes
+Benchmark fixe: 436 graphes
+Epoch 1/50, Train Loss: 4.0035, Val Loss: 4.2240, Benchmark Loss: 4.8135
+Epoch 2/50, Train Loss: 3.9746, Val Loss: 4.2145, Benchmark Loss: 4.8078
+Epoch 3/50, Train Loss: 3.9683, Val Loss: 4.2112, Benchmark Loss: 4.8034
+Epoch 4/50, Train Loss: 3.9657, Val Loss: 4.2081, Benchmark Loss: 4.8002
+Epoch 5/50, Train Loss: 3.9635, Val Loss: 4.2119, Benchmark Loss: 4.8034
+Epoch 6/50, Train Loss: 3.9618, Val Loss: 4.2066, Benchmark Loss: 4.7986
+Epoch 7/50, Train Loss: 3.9612, Val Loss: 4.2040, Benchmark Loss: 4.7959
+Epoch 8/50, Train Loss: 3.9592, Val Loss: 4.2036, Benchmark Loss: 4.7961
+Epoch 9/50, Train Loss: 3.9584, Val Loss: 4.2032, Benchmark Loss: 4.7951
+Epoch 10/50, Train Loss: 3.9585, Val Loss: 4.2021, Benchmark Loss: 4.7954
+Epoch 11/50, Train Loss: 3.9573, Val Loss: 4.2016, Benchmark Loss: 4.7949
+Epoch 12/50, Train Loss: 3.9564, Val Loss: 4.2024, Benchmark Loss: 4.7958
+Epoch 13/50, Train Loss: 3.9556, Val Loss: 4.2023, Benchmark Loss: 4.7943
+Epoch 14/50, Train Loss: 3.9562, Val Loss: 4.2008, Benchmark Loss: 4.7942
+Epoch 15/50, Train Loss: 3.9549, Val Loss: 4.2035, Benchmark Loss: 4.7960
+Epoch 16/50, Train Loss: 3.9551, Val Loss: 4.2003, Benchmark Loss: 4.7949
+Epoch 17/50, Train Loss: 3.9543, Val Loss: 4.2018, Benchmark Loss: 4.7951
+Epoch 18/50, Train Loss: 3.9535, Val Loss: 4.1996, Benchmark Loss: 4.7933
+Epoch 19/50, Train Loss: 3.9534, Val Loss: 4.1984, Benchmark Loss: 4.7923
+Epoch 20/50, Train Loss: 3.9541, Val Loss: 4.1991, Benchmark Loss: 4.7934
+Epoch 21/50, Train Loss: 3.9533, Val Loss: 4.1985, Benchmark Loss: 4.7920
+Epoch 22/50, Train Loss: 3.9517, Val Loss: 4.1970, Benchmark Loss: 4.7910
+Epoch 23/50, Train Loss: 3.9519, Val Loss: 4.1972, Benchmark Loss: 4.7912
+Epoch 24/50, Train Loss: 3.9512, Val Loss: 4.1989, Benchmark Loss: 4.7931
+Epoch 25/50, Train Loss: 3.9510, Val Loss: 4.1959, Benchmark Loss: 4.7910
+Epoch 26/50, Train Loss: 3.9506, Val Loss: 4.1959, Benchmark Loss: 4.7903
+Epoch 27/50, Train Loss: 3.9503, Val Loss: 4.1969, Benchmark Loss: 4.7904
+Epoch 28/50, Train Loss: 3.9496, Val Loss: 4.1957, Benchmark Loss: 4.7901
+Epoch 29/50, Train Loss: 3.9495, Val Loss: 4.1960, Benchmark Loss: 4.7899
+Epoch 30/50, Train Loss: 3.9493, Val Loss: 4.1963, Benchmark Loss: 4.7898
+Epoch 31/50, Train Loss: 3.9487, Val Loss: 4.1949, Benchmark Loss: 4.7894
+Epoch 32/50, Train Loss: 3.9490, Val Loss: 4.1969, Benchmark Loss: 4.7912
+Epoch 33/50, Train Loss: 3.9492, Val Loss: 4.1948, Benchmark Loss: 4.7890
+Epoch 34/50, Train Loss: 3.9483, Val Loss: 4.1953, Benchmark Loss: 4.7895
+Epoch 35/50, Train Loss: 3.9481, Val Loss: 4.1944, Benchmark Loss: 4.7887
+Epoch 36/50, Train Loss: 3.9479, Val Loss: 4.1945, Benchmark Loss: 4.7886
+Epoch 37/50, Train Loss: 3.9477, Val Loss: 4.1952, Benchmark Loss: 4.7893
+Epoch 38/50, Train Loss: 3.9476, Val Loss: 4.1930, Benchmark Loss: 4.7874
+Epoch 39/50, Train Loss: 3.9471, Val Loss: 4.1939, Benchmark Loss: 4.7879
+Epoch 40/50, Train Loss: 3.9469, Val Loss: 4.1944, Benchmark Loss: 4.7890
+Epoch 41/50, Train Loss: 3.9464, Val Loss: 4.1953, Benchmark Loss: 4.7895
+Epoch 42/50, Train Loss: 3.9466, Val Loss: 4.1924, Benchmark Loss: 4.7875
+Epoch 43/50, Train Loss: 3.9462, Val Loss: 4.1927, Benchmark Loss: 4.7875
+Epoch 44/50, Train Loss: 3.9463, Val Loss: 4.1940, Benchmark Loss: 4.7880
+Epoch 45/50, Train Loss: 3.9462, Val Loss: 4.1923, Benchmark Loss: 4.7873
+Epoch 46/50, Train Loss: 3.9460, Val Loss: 4.1933, Benchmark Loss: 4.7882
+Epoch 47/50, Train Loss: 3.9455, Val Loss: 4.1960, Benchmark Loss: 4.7915
+Epoch 48/50, Train Loss: 3.9454, Val Loss: 4.1915, Benchmark Loss: 4.7861
+Epoch 49/50, Train Loss: 3.9458, Val Loss: 4.1914, Benchmark Loss: 4.7870
+Epoch 50/50, Train Loss: 3.9461, Val Loss: 4.1922, Benchmark Loss: 4.7874
+Benchmark MAE: 1.7119

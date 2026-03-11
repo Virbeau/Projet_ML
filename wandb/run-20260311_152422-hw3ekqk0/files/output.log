@@ -1,0 +1,14 @@
+[ReliabilityDataset] 985 instances invalides ignorees sur 10000
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 472 / 908
+Train/val dataset: 9015 graphes
+Benchmark fixe: 436 graphes
+Epoch 1/50, Train Loss: 4.9905, Val Loss: 4.3707, Benchmark Loss: 4.8132
+Epoch 2/50, Train Loss: 4.9858, Val Loss: 4.3690, Benchmark Loss: 4.8160
+Epoch 3/50, Train Loss: 4.9835, Val Loss: 4.3681, Benchmark Loss: 4.8151
+Epoch 4/50, Train Loss: 4.9820, Val Loss: 4.3654, Benchmark Loss: 4.8063
+Epoch 5/50, Train Loss: 4.9803, Val Loss: 4.3656, Benchmark Loss: 4.8093
+Epoch 6/50, Train Loss: 4.9790, Val Loss: 4.3626, Benchmark Loss: 4.8013
+Epoch 7/50, Train Loss: 4.9783, Val Loss: 4.3617, Benchmark Loss: 4.7986
+Epoch 8/50, Train Loss: 4.9783, Val Loss: 4.3617, Benchmark Loss: 4.7991
+Epoch 9/50, Train Loss: 4.9773, Val Loss: 4.3616, Benchmark Loss: 4.8001

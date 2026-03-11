@@ -1,0 +1,25 @@
+[ReliabilityDataset] 985 instances invalides ignorees sur 10000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 4816 / 9015
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 472 / 908
+Train/val dataset: 4199 graphes
+Benchmark fixe: 436 graphes
+Traceback (most recent call last):
+  File "/users/local/l24virbe/Projet_ML/GINE_J_predictor.py", line 270, in <module>
+    for data in train_loader:
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 741, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 801, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/utils/data/_utils/fetch.py", line 52, in fetch
+    data = self.dataset.__getitems__(possibly_batched_index)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/utils/data/dataset.py", line 413, in __getitems__
+    return [self.dataset[self.indices[idx]] for idx in indices]
+            ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/GINE_J_predictor.py", line 129, in __getitem__
+    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

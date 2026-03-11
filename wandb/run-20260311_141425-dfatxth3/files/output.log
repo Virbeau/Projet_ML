@@ -1,0 +1,33 @@
+Epoch 1/30, Train Loss: 0.0885, Test Loss: 0.0411
+Epoch 2/30, Train Loss: 0.0446, Test Loss: 0.0400
+Epoch 3/30, Train Loss: 0.0336, Test Loss: 0.0499
+Epoch 4/30, Train Loss: 0.0282, Test Loss: 0.0233
+Epoch 5/30, Train Loss: 0.0239, Test Loss: 0.0213
+Epoch 6/30, Train Loss: 0.0210, Test Loss: 0.0161
+Epoch 7/30, Train Loss: 0.0193, Test Loss: 0.0168
+Epoch 8/30, Train Loss: 0.0192, Test Loss: 0.0178
+Epoch 9/30, Train Loss: 0.0167, Test Loss: 0.0214
+Epoch 10/30, Train Loss: 0.0165, Test Loss: 0.0251
+Epoch 11/30, Train Loss: 0.0158, Test Loss: 0.0133
+Epoch 12/30, Train Loss: 0.0139, Test Loss: 0.0116
+Epoch 13/30, Train Loss: 0.0136, Test Loss: 0.0192
+Epoch 14/30, Train Loss: 0.0132, Test Loss: 0.0152
+Epoch 15/30, Train Loss: 0.0122, Test Loss: 0.0129
+Epoch 16/30, Train Loss: 0.0120, Test Loss: 0.0105
+Epoch 17/30, Train Loss: 0.0115, Test Loss: 0.0098
+Epoch 18/30, Train Loss: 0.0113, Test Loss: 0.0107
+Epoch 19/30, Train Loss: 0.0109, Test Loss: 0.0122
+Epoch 20/30, Train Loss: 0.0103, Test Loss: 0.0156
+Epoch 21/30, Train Loss: 0.0107, Test Loss: 0.0116
+Epoch 22/30, Train Loss: 0.0093, Test Loss: 0.0097
+Epoch 23/30, Train Loss: 0.0092, Test Loss: 0.0157
+Epoch 24/30, Train Loss: 0.0094, Test Loss: 0.0140
+Epoch 25/30, Train Loss: 0.0087, Test Loss: 0.0086
+Epoch 26/30, Train Loss: 0.0084, Test Loss: 0.0128
+Epoch 27/30, Train Loss: 0.0084, Test Loss: 0.0094
+Epoch 28/30, Train Loss: 0.0080, Test Loss: 0.0097
+Epoch 29/30, Train Loss: 0.0079, Test Loss: 0.0081
+Epoch 30/30, Train Loss: 0.0078, Test Loss: 0.0110
+=== Évaluation finale sur le test set ===
+MSE : 0.0110
+MAE : 0.0568
