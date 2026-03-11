@@ -5,8 +5,11 @@ from pathlib import Path
 from collections import defaultdict
 import statistics
 import argparse
+import csv
 
 import numpy as np
+import networkx as nx
+from scipy.stats import spearmanr, t as student_t
 
 
 def percentile(values, q):
@@ -21,6 +24,170 @@ def safe_corr(a, b):
     if np.std(a_arr) == 0 or np.std(b_arr) == 0:
         return None
     return float(np.corrcoef(a_arr, b_arr)[0, 1])
+
+
+def safe_spearman(a, b):
+    if len(a) < 2:
+        return None
+    a_arr = np.array(a, dtype=float)
+    b_arr = np.array(b, dtype=float)
+    if np.std(a_arr) == 0 or np.std(b_arr) == 0:
+        return None
+    corr, _ = spearmanr(a_arr, b_arr)
+    if np.isnan(corr):
+        return None
+    return float(corr)
+
+
+def onehot_topology(topologies):
+    unique = sorted(set(topologies))
+    if len(unique) <= 1:
+        return np.zeros((len(topologies), 0), dtype=float), unique, None
+
+    baseline = unique[0]
+    cols = []
+    for topo in unique[1:]:
+        cols.append([1.0 if t == topo else 0.0 for t in topologies])
+    return np.array(cols, dtype=float).T, unique, baseline
+
+
+def partial_corr_with_p(x, y, controls):
+    x_arr = np.array(x, dtype=float)
+    y_arr = np.array(y, dtype=float)
+    z_arr = np.array(controls, dtype=float)
+    if z_arr.ndim == 1:
+        z_arr = z_arr.reshape(-1, 1)
+
+    n = len(x_arr)
+    if n < 3:
+        return None
+
+    k = z_arr.shape[1]
+    if n <= (k + 2):
+        return None
+
+    X = np.column_stack([np.ones(n), z_arr])
+    beta_x = np.linalg.lstsq(X, x_arr, rcond=None)[0]
+    beta_y = np.linalg.lstsq(X, y_arr, rcond=None)[0]
+    rx = x_arr - X @ beta_x
+    ry = y_arr - X @ beta_y
+
+    if np.std(rx) == 0 or np.std(ry) == 0:
+        return None
+
+    r = float(np.corrcoef(rx, ry)[0, 1])
+    dof = n - k - 2
+    t_val = r * math.sqrt(dof / max(1e-15, (1 - r * r)))
+    p_val = float(2 * (1 - student_t.cdf(abs(t_val), dof)))
+
+    return {
+        "r": r,
+        "p_value": p_val,
+        "dof": int(dof),
+    }
+
+
+def standardized_beta(target, main_feature, controls):
+    y = np.array(target, dtype=float)
+    x_main = np.array(main_feature, dtype=float)
+    z = np.array(controls, dtype=float)
+
+    if z.ndim == 1:
+        z = z.reshape(-1, 1)
+
+    X = np.column_stack([x_main, z])
+    stds = np.std(X, axis=0)
+    if np.any(stds == 0) or np.std(y) == 0:
+        return None
+
+    Xz = (X - np.mean(X, axis=0)) / stds
+    yz = (y - np.mean(y)) / np.std(y)
+    Xd = np.column_stack([np.ones(len(yz)), Xz])
+    beta = np.linalg.lstsq(Xd, yz, rcond=None)[0]
+    return float(beta[1])
+
+
+def allocation_quality_metrics(inst):
+    nodes = inst.get("graph", {}).get("nodes", [])
+    edges = inst.get("graph", {}).get("edges", [])
+    y = inst.get("y", [])
+    repairable = inst.get("repairable_nodes", [])
+    is_directed = bool(inst.get("graph", {}).get("is_directed", True))
+
+    if not nodes or not repairable or not y:
+        return {
+            "allocation_spearman_centrality": 0.0,
+            "allocation_efficiency_score": 0.0,
+            "budget_concentration": 0.0,
+            "budget_active": False,
+        }
+
+    G = nx.DiGraph() if is_directed else nx.Graph()
+    G.add_nodes_from(nodes)
+    G.add_edges_from(edges)
+
+    try:
+        centrality = nx.betweenness_centrality(G, normalized=True)
+    except Exception:
+        centrality = {n: 0.0 for n in nodes}
+
+    y_map = {nodes[i]: float(y[i]) for i in range(min(len(nodes), len(y)))}
+    budgets = []
+    centralities = []
+
+    for node in repairable:
+        if node in y_map and node in centrality:
+            budgets.append(y_map[node])
+            centralities.append(float(centrality[node]))
+
+    if len(budgets) < 2:
+        return {
+            "allocation_spearman_centrality": 0.0,
+            "allocation_efficiency_score": 0.0,
+            "budget_concentration": 0.0,
+            "budget_active": False,
+        }
+
+    budgets_arr = np.array(budgets, dtype=float)
+    cent_arr = np.array(centralities, dtype=float)
+    budget_active = bool(np.sum(budgets_arr) > 0)
+
+    if np.std(budgets_arr) == 0 or np.std(cent_arr) == 0:
+        return {
+            "allocation_spearman_centrality": 0.0,
+            "allocation_efficiency_score": 0.0,
+            "budget_concentration": 0.0,
+            "budget_active": budget_active,
+        }
+
+    s_corr = safe_spearman(budgets_arr, cent_arr)
+    s_corr = float(s_corr) if s_corr is not None else 0.0
+
+    if not budget_active:
+        return {
+            "allocation_spearman_centrality": s_corr,
+            "allocation_efficiency_score": 0.0,
+            "budget_concentration": 0.0,
+            "budget_active": budget_active,
+        }
+
+    b_norm = budgets_arr / (np.sum(budgets_arr) + 1e-12)
+    if np.max(cent_arr) > 0:
+        c_norm = cent_arr / np.max(cent_arr)
+    else:
+        c_norm = cent_arr
+
+    efficiency = b_norm * c_norm
+    top_n = min(3, len(budgets_arr))
+    top_idx = np.argsort(budgets_arr)[-top_n:][::-1]
+    top_eff = float(np.mean(efficiency[top_idx]))
+
+    return {
+        "allocation_spearman_centrality": s_corr,
+        "allocation_efficiency_score": top_eff,
+        "budget_concentration": float(np.std(b_norm)),
+        "budget_active": budget_active,
+    }
 
 
 def family_from_topology(topology_type):
@@ -87,6 +254,8 @@ def main():
 
     out_json = Path(f"{prefix}_analysis.json")
     out_txt = Path(f"{prefix}_analysis_summary.txt")
+    out_influence_json = Path(f"{prefix}_influence_variables.json")
+    out_influence_csv = Path(f"{prefix}_influence_variables.csv")
 
     with dataset_path.open("r") as f:
         data = json.load(f)
@@ -118,9 +287,16 @@ def main():
     full_path_exists = []
     directed_flags = []
     terminal_distances = []
+    topology_values = []
+    allocation_spearman_values = []
+    allocation_efficiency_values = []
+    budget_concentration_values = []
+    budget_active_flags = []
+    influence_rows = []
 
     for inst in instances:
         topology = inst["topology_type"]
+        topology_values.append(topology)
         family = family_from_topology(topology)
         B = float(inst["B"])
         H = int(inst["H"])
@@ -175,6 +351,32 @@ def main():
                             stack.append(nxt)
 
         full_path_exists.append(reachable)
+
+        alloc_metrics = allocation_quality_metrics(inst)
+        alloc_s = alloc_metrics["allocation_spearman_centrality"]
+        alloc_q = alloc_metrics["allocation_efficiency_score"]
+        b_conc = alloc_metrics["budget_concentration"]
+        b_active = bool(alloc_metrics["budget_active"])
+
+        allocation_spearman_values.append(alloc_s)
+        allocation_efficiency_values.append(alloc_q)
+        budget_concentration_values.append(b_conc)
+        budget_active_flags.append(b_active)
+
+        influence_rows.append({
+            "instance_index": len(influence_rows),
+            "topology_type": topology,
+            "family": family,
+            "B": B,
+            "H": H,
+            "n_nodes": n_nodes,
+            "n_edges": n_edges,
+            "J_star": j,
+            "allocation_spearman_centrality": alloc_s,
+            "allocation_efficiency_score": alloc_q,
+            "budget_concentration": b_conc,
+            "budget_active": b_active,
+        })
 
         groups_topology[topology].append(j)
         groups_family[family].append(j)
@@ -263,10 +465,98 @@ def main():
 
     correlations = {
         "corr(B, J_star)": safe_corr(B_values, J_values),
+        "corr_spearman(B, J_star)": safe_spearman(B_values, J_values),
         "corr(H, J_star)": safe_corr(H_values, J_values),
         "corr(n_nodes, J_star)": safe_corr(N_values, J_values),
         "corr(n_edges, J_star)": safe_corr(E_values, J_values),
+        "corr(allocation_spearman_centrality, J_star)": safe_corr(allocation_spearman_values, J_values),
+        "corr(allocation_efficiency_score, J_star)": safe_corr(allocation_efficiency_values, J_values),
+        "corr(budget_concentration, J_star)": safe_corr(budget_concentration_values, J_values),
     }
+
+    topo_dummies, topo_levels, topo_baseline = onehot_topology(topology_values)
+    controls_basic = np.column_stack([
+        np.array(H_values, dtype=float),
+        np.array(N_values, dtype=float),
+        np.array(E_values, dtype=float),
+    ])
+    controls_budget_complexity = np.column_stack([
+        np.array(B_values, dtype=float),
+        np.array(H_values, dtype=float),
+        np.array(N_values, dtype=float),
+        np.array(E_values, dtype=float),
+        topo_dummies,
+    ])
+    controls_with_alloc = np.column_stack([
+        np.array(B_values, dtype=float),
+        np.array(allocation_efficiency_values, dtype=float),
+        np.array(H_values, dtype=float),
+        np.array(N_values, dtype=float),
+        np.array(E_values, dtype=float),
+        topo_dummies,
+    ])
+
+    adjusted_budget_influence = {
+        "raw_corr_pearson": safe_corr(B_values, J_values),
+        "raw_corr_spearman": safe_spearman(B_values, J_values),
+        "partial_corr_pearson__controls_H_n_nodes_n_edges": partial_corr_with_p(
+            B_values, J_values, controls_basic
+        ),
+        "partial_corr_pearson__controls_H_n_nodes_n_edges_topology": partial_corr_with_p(
+            B_values,
+            J_values,
+            np.column_stack([controls_basic, topo_dummies]),
+        ),
+        "standardized_beta_B__controls_H_n_nodes_n_edges": standardized_beta(
+            J_values, B_values, controls_basic
+        ),
+        "standardized_beta_B__controls_H_n_nodes_n_edges_topology": standardized_beta(
+            J_values,
+            B_values,
+            np.column_stack([controls_basic, topo_dummies]),
+        ),
+        "topology_encoding": {
+            "levels": topo_levels,
+            "baseline": topo_baseline,
+        },
+    }
+
+    interaction_term = np.array(B_values, dtype=float) * np.array(allocation_efficiency_values, dtype=float)
+    allocation_influence = {
+        "raw_corr_allocation_spearman_vs_J_star": safe_corr(allocation_spearman_values, J_values),
+        "raw_corr_allocation_efficiency_vs_J_star": safe_corr(allocation_efficiency_values, J_values),
+        "partial_corr_allocation_spearman_vs_J_star__controls_B_H_n_nodes_n_edges_topology": partial_corr_with_p(
+            allocation_spearman_values,
+            J_values,
+            controls_budget_complexity,
+        ),
+        "partial_corr_allocation_efficiency_vs_J_star__controls_B_H_n_nodes_n_edges_topology": partial_corr_with_p(
+            allocation_efficiency_values,
+            J_values,
+            controls_budget_complexity,
+        ),
+        "partial_corr_interaction_Bxallocation_efficiency_vs_J_star": partial_corr_with_p(
+            interaction_term,
+            J_values,
+            controls_with_alloc,
+        ),
+        "budget_active_ratio": float(np.mean(np.array(budget_active_flags, dtype=bool))),
+        "allocation_efficiency_mean": float(np.mean(np.array(allocation_efficiency_values, dtype=float))),
+        "allocation_efficiency_std": float(np.std(np.array(allocation_efficiency_values, dtype=float))),
+    }
+
+    alloc_q25 = percentile(allocation_efficiency_values, 25)
+    alloc_q75 = percentile(allocation_efficiency_values, 75)
+    j_arr = np.array(J_values, dtype=float)
+    alloc_arr = np.array(allocation_efficiency_values, dtype=float)
+    low_alloc_mask = alloc_arr <= alloc_q25
+    high_alloc_mask = alloc_arr >= alloc_q75
+    if np.any(low_alloc_mask) and np.any(high_alloc_mask):
+        allocation_influence["J_star_mean_low_allocation_q25"] = float(np.mean(j_arr[low_alloc_mask]))
+        allocation_influence["J_star_mean_high_allocation_q75"] = float(np.mean(j_arr[high_alloc_mask]))
+        allocation_influence["J_star_lift_high_vs_low_allocation"] = float(
+            np.mean(j_arr[high_alloc_mask]) - np.mean(j_arr[low_alloc_mask])
+        )
 
     risk_bands = {
         "very_low_[0,0.1]": rate_below(J_values, 0.1),
@@ -291,6 +581,8 @@ def main():
         "overall_J_star": overall,
         "risk_bands": risk_bands,
         "correlations": correlations,
+        "adjusted_budget_influence": adjusted_budget_influence,
+        "allocation_influence": allocation_influence,
         "graph_integrity": {
             "directed_ratio": float(np.mean(np.array(directed_flags, dtype=bool))),
             "full_graph_path_exists_ratio": float(np.mean(np.array(full_path_exists, dtype=bool))),
@@ -310,6 +602,40 @@ def main():
     with out_json.open("w") as f:
         json.dump(analysis, f, indent=2)
 
+    influence_payload = {
+        "dataset_path": str(dataset_path),
+        "n_instances": len(instances),
+        "variables": {
+            "adjusted_budget_influence": adjusted_budget_influence,
+            "allocation_influence": allocation_influence,
+            "thresholds": {
+                "allocation_efficiency_q25": alloc_q25,
+                "allocation_efficiency_q75": alloc_q75,
+            },
+        },
+        "instances": influence_rows,
+    }
+    with out_influence_json.open("w") as f:
+        json.dump(influence_payload, f, indent=2)
+
+    with out_influence_csv.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=[
+            "instance_index",
+            "topology_type",
+            "family",
+            "B",
+            "H",
+            "n_nodes",
+            "n_edges",
+            "J_star",
+            "allocation_spearman_centrality",
+            "allocation_efficiency_score",
+            "budget_concentration",
+            "budget_active",
+        ])
+        writer.writeheader()
+        writer.writerows(influence_rows)
+
     lines = []
     lines.append(f"ANALYSE DATASET - {dataset_path.name} - PROBABILITÉS DE DÉFAILLANCE\n")
     lines.append(f"Instances: {analysis['n_instances']}")
@@ -321,6 +647,20 @@ def main():
     lines.append("\nCorrélations avec J*:")
     for k, v in correlations.items():
         lines.append(f"- {k}: {v if v is not None else 'NA'}")
+
+    lines.append("\nInfluence réelle du budget (corrigée de la complexité):")
+    for k, v in adjusted_budget_influence.items():
+        if isinstance(v, dict):
+            lines.append(f"- {k}: {json.dumps(v)}")
+        else:
+            lines.append(f"- {k}: {v}")
+
+    lines.append("\nInfluence de la qualité de répartition du budget:")
+    for k, v in allocation_influence.items():
+        if isinstance(v, dict):
+            lines.append(f"- {k}: {json.dumps(v)}")
+        else:
+            lines.append(f"- {k}: {v}")
 
     lines.append("\nFamilles de topologies (mean J*):")
     for fam, stats in sorted(family_stats.items(), key=lambda x: x[1]['mean'], reverse=True):
@@ -344,7 +684,13 @@ def main():
 
     out_txt.write_text("\n".join(lines))
 
-    print(f"Analyse terminée.\n- JSON: {out_json}\n- Résumé: {out_txt}")
+    print(
+        "Analyse terminée.\n"
+        f"- JSON: {out_json}\n"
+        f"- Résumé: {out_txt}\n"
+        f"- Variables d'influence (JSON): {out_influence_json}\n"
+        f"- Variables d'influence (CSV): {out_influence_csv}"
+    )
 
 
 if __name__ == "__main__":

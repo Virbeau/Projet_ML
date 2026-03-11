@@ -12,9 +12,35 @@ Bandes de risque (part du dataset):
 
 Corrélations avec J*:
 - corr(B, J_star): 0.4358581187145349
+- corr_spearman(B, J_star): 0.5323411392785966
 - corr(H, J_star): -0.07894955538134008
 - corr(n_nodes, J_star): -0.020860269203828642
 - corr(n_edges, J_star): -0.17644594797000362
+- corr(allocation_spearman_centrality, J_star): -0.06031163227027345
+- corr(allocation_efficiency_score, J_star): 0.12895907245641217
+- corr(budget_concentration, J_star): 0.2065040346939263
+
+Influence réelle du budget (corrigée de la complexité):
+- raw_corr_pearson: 0.4358581187145349
+- raw_corr_spearman: 0.5323411392785966
+- partial_corr_pearson__controls_H_n_nodes_n_edges: {"r": 0.40405893044068353, "p_value": 0.0, "dof": 995}
+- partial_corr_pearson__controls_H_n_nodes_n_edges_topology: {"r": 0.4213846460898579, "p_value": 0.0, "dof": 867}
+- standardized_beta_B__controls_H_n_nodes_n_edges: 0.4034653022644745
+- standardized_beta_B__controls_H_n_nodes_n_edges_topology: 0.40045709043920075
+- topology_encoding: {"levels": ["er_n10_p0.3", "er_n10_p0.31", "er_n10_p0.32", "er_n10_p0.33", "er_n10_p0.34", "er_n10_p0.35", "er_n10_p0.36", "er_n10_p0.37", "er_n10_p0.38", "er_n10_p0.4", "er_n10_p0.41", "er_n10_p0.43", "er_n10_p0.44", "er_n11_p0.32", "er_n11_p0.33", "er_n11_p0.35", "er_n11_p0.37", "er_n11_p0.39", "er_n11_p0.42", "er_n12_p0.31", "er_n12_p0.33", "er_n12_p0.34", "er_n12_p0.36", "er_n12_p0.37", "er_n12_p0.38", "er_n12_p0.42", "er_n4_p0.3", "er_n4_p0.31", "er_n4_p0.32", "er_n4_p0.33", "er_n4_p0.34", "er_n4_p0.35", "er_n4_p0.36", "er_n4_p0.38", "er_n4_p0.39", "er_n4_p0.4", "er_n4_p0.41", "er_n4_p0.43", "er_n4_p0.44", "er_n5_p0.31", "er_n5_p0.32", "er_n5_p0.33", "er_n5_p0.34", "er_n5_p0.35", "er_n5_p0.36", "er_n5_p0.37", "er_n5_p0.38", "er_n5_p0.39", "er_n5_p0.4", "er_n5_p0.41", "er_n5_p0.42", "er_n5_p0.43", "er_n5_p0.45", "er_n6_p0.3", "er_n6_p0.31", "er_n6_p0.32", "er_n6_p0.33", "er_n6_p0.34", "er_n6_p0.35", "er_n6_p0.36", "er_n6_p0.37", "er_n6_p0.38", "er_n6_p0.39", "er_n6_p0.4", "er_n6_p0.41", "er_n6_p0.42", "er_n6_p0.43", "er_n6_p0.44", "er_n7_p0.31", "er_n7_p0.32", "er_n7_p0.33", "er_n7_p0.34", "er_n7_p0.35", "er_n7_p0.36", "er_n7_p0.37", "er_n7_p0.38", "er_n7_p0.39", "er_n7_p0.4", "er_n7_p0.41", "er_n7_p0.42", "er_n7_p0.43", "er_n7_p0.44", "er_n7_p0.45", "er_n8_p0.3", "er_n8_p0.31", "er_n8_p0.32", "er_n8_p0.33", "er_n8_p0.34", "er_n8_p0.35", "er_n8_p0.36", "er_n8_p0.37", "er_n8_p0.38", "er_n8_p0.39", "er_n8_p0.4", "er_n8_p0.41", "er_n8_p0.42", "er_n8_p0.43", "er_n8_p0.44", "er_n9_p0.3", "er_n9_p0.31", "er_n9_p0.32", "er_n9_p0.33", "er_n9_p0.34", "er_n9_p0.35", "er_n9_p0.37", "er_n9_p0.38", "er_n9_p0.39", "er_n9_p0.4", "er_n9_p0.41", "er_n9_p0.42", "er_n9_p0.44", "er_n9_p0.45", "mesh_2x2", "mesh_2x3", "mesh_2x4", "mesh_2x5", "mesh_3x2", "mesh_3x3", "mesh_3x4", "mesh_4x3", "sp_sp10", "sp_sp2", "sp_sp3", "sp_sp4", "sp_sp5", "sp_sp6", "sp_sp7", "sp_sp8", "sp_sp9"], "baseline": "er_n10_p0.3"}
+
+Influence de la qualité de répartition du budget:
+- raw_corr_allocation_spearman_vs_J_star: -0.06031163227027345
+- raw_corr_allocation_efficiency_vs_J_star: 0.12895907245641217
+- partial_corr_allocation_spearman_vs_J_star__controls_B_H_n_nodes_n_edges_topology: {"r": 0.1267421500581515, "p_value": 0.00018127015070090735, "dof": 866}
+- partial_corr_allocation_efficiency_vs_J_star__controls_B_H_n_nodes_n_edges_topology: {"r": 0.31104088666792173, "p_value": 0.0, "dof": 866}
+- partial_corr_interaction_Bxallocation_efficiency_vs_J_star: {"r": -0.16678061730196378, "p_value": 7.877625149976808e-07, "dof": 865}
+- budget_active_ratio: 0.521
+- allocation_efficiency_mean: 0.08534186977370889
+- allocation_efficiency_std: 0.10316729439907858
+- J_star_mean_low_allocation_q25: 0.5189071087987279
+- J_star_mean_high_allocation_q75: 0.6290411125449211
+- J_star_lift_high_vs_low_allocation: 0.1101340037461932
 
 Familles de topologies (mean J*):
 - sp: count=333, mean=0.670311, p50=0.949906, p90=0.999999, P(J*>=0.9)=56.16%
