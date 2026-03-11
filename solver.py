@@ -135,6 +135,58 @@ def compute_objective_J(G, terminals, criterion, params, pi, H, fail_mask=None):
     return h[start_state]
 
 
+def project_with_budget_fill(pi, c_cost, B, grad=None, tol=1e-10):
+    """
+    Projection sur 0<=pi<=1 et budget "plein" quand possible.
+    - Si le cout depasse B: homothetie vers le bas.
+    - Si le cout est sous B: remplit le reliquat en priorisant les composantes
+      les plus prometteuses selon -grad (descente).
+    """
+    pi = np.clip(pi, 0.0, 1.0)
+
+    current_cost = float(np.sum(pi * c_cost))
+    if current_cost > B + tol and current_cost > 0.0:
+        pi = pi * (B / current_cost)
+        pi = np.clip(pi, 0.0, 1.0)
+        current_cost = float(np.sum(pi * c_cost))
+
+    remaining = B - current_cost
+    if remaining <= tol:
+        return np.clip(pi, 0.0, 1.0)
+
+    # Capacite residuelle maximale compte tenu des bornes pi<=1.
+    headroom_cost = float(np.sum((1.0 - pi) * c_cost))
+    if headroom_cost <= tol:
+        return np.clip(pi, 0.0, 1.0)
+
+    # Priorite: plus -grad est grand, plus on alloue en premier.
+    if grad is None:
+        priority = np.ones_like(pi)
+    else:
+        priority = -grad.copy()
+        priority = np.where(priority > 0.0, priority, 0.0)
+        if float(np.sum(priority)) <= tol:
+            priority = np.ones_like(pi)
+
+    order = np.argsort(-priority)
+
+    for i in order:
+        if remaining <= tol:
+            break
+        if c_cost[i] <= 0:
+            continue
+        max_delta = 1.0 - pi[i]
+        if max_delta <= tol:
+            continue
+
+        add = min(max_delta, remaining / c_cost[i])
+        if add > 0.0:
+            pi[i] += add
+            remaining -= add * c_cost[i]
+
+    return np.clip(pi, 0.0, 1.0)
+
+
 # --- L'Optimiseur (Calcul du label pi*) ---
 def projected_gradient_descent(G, terminals, criterion, params, H, B, lr=0.8, iters=25, eps=1e-3, verbose=False):
     """
@@ -162,13 +214,8 @@ def projected_gradient_descent(G, terminals, criterion, params, H, B, lr=0.8, it
         # 2. Descente de gradient (J_current est une probabilité de panne, on veut la réduire)
         pi_new = pi - lr * grad
         
-        # 3. Projection sur le budget (Somme des pi*cost <= B)
-        pi_new = np.clip(pi_new, 0.0, 1.0)
-        current_cost = np.sum(pi_new * c_cost)
-        if current_cost > B:
-            pi_new = pi_new * (B / current_cost) # On réduit proportionnellement
-            
-        pi = np.clip(pi_new, 0.0, 1.0)
+        # 3. Projection sur le budget avec remplissage (vise sum(pi*c_cost)=B si possible)
+        pi = project_with_budget_fill(pi_new, c_cost, B, grad=grad)
         hist.append(J_current)
         
     return pi, hist

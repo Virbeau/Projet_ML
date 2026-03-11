@@ -4,3 +4,14 @@
 Datasets | train_val=9015 | benchmark=436
 Epoch 10/50
 Epoch 20/50
+Epoch 30/50
+Epoch 40/50
+Epoch 50/50
+Final metrics | node_mae=1.7119 | budget_viol=0/436 (mean_err=5.72e-07) | terminal_max=0.00e+00
+Modele sauvegarde: checkpoints/gine_b_repartition_v3.pt
+Calcul deltaJ...
+deltaJ: 0/436
+deltaJ: 200/436
+deltaJ: 400/436
+deltaJ | abs_mean=0.001506 | rel_mean=0.47%
+deltaJ done | abs_mean=0.001506 | rel_mean=0.47%

@@ -486,6 +486,8 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
             total_loss += loss.item() * data.num_nodes
+        train_loss = total_loss / max(1, sum(d.num_nodes for d in train_loader.dataset))
+        wandb.log({"epoch": epoch + 1, "train_loss": train_loss})
         if (epoch + 1) % 10 == 0 or (epoch + 1) == NUM_EPOCHS:
             print(f"Epoch {epoch+1}/{NUM_EPOCHS}")
     # Calcul de la MAE par noeud et envoi a wandb

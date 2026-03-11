@@ -17,3 +17,8 @@ config: {'batch_size': 32, 'lr': 0.001, 'epochs': 50, 'wandb_group': 'Gine_B', '
 2026-03-11 15:40:17,513 INFO    MainThread:694552 [wandb_run.py:_redirect():2442] Wrapping output streams.
 2026-03-11 15:40:17,513 INFO    MainThread:694552 [wandb_run.py:_redirect():2465] Redirects installed.
 2026-03-11 15:40:17,515 INFO    MainThread:694552 [wandb_init.py:init():1082] run started, returning control to user process
+2026-03-11 16:00:57,874 INFO    MainThread:694552 [wandb_run.py:_finish():2291] finishing run louis-virbel-imt-atlantique/Reliability_GNN/nsek7av1
+2026-03-11 16:00:57,875 INFO    MainThread:694552 [wandb_run.py:_atexit_cleanup():2490] got exitcode: 0
+2026-03-11 16:00:57,875 INFO    MainThread:694552 [wandb_run.py:_restore():2472] restore
+2026-03-11 16:00:57,875 INFO    MainThread:694552 [wandb_run.py:_restore():2478] restore done
+2026-03-11 16:01:01,019 INFO    MainThread:694552 [wandb_run.py:_footer_sync_info():3868] logging synced files

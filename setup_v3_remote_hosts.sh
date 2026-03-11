@@ -43,7 +43,7 @@ while read -r host; do
       python3 -m venv env_projet
     fi
     env_projet/bin/python3 -m pip install --upgrade pip >/dev/null
-    env_projet/bin/python3 -m pip install -r requirements.txt >/dev/null
+    env_projet/bin/python3 -m pip install -r requirements_generation.txt >/dev/null
     echo ready
   '"
 
