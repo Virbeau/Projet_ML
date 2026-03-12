@@ -8,7 +8,7 @@ import torch
 from GINE_B_repartition import GINE_Allocation_Predictor
 
 DATASET_JSON = "JSON/dataset_hybrid_mesh_sp_er_v2_1000.json"
-MODEL_PATH = "checkpoints/gine_b_repartition_v3.pt"
+MODEL_PATH = "checkpoints/gine_b_repartition_v4.pt"
 OUTPUT_PATH = "gine_b_3_families_comparison.png"
 DEVICE = "cpu"
 BUDGET_TOL = 1e-4

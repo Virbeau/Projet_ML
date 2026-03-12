@@ -7,10 +7,10 @@ from torch.nn import Sequential, Linear, ReLU, BatchNorm1d, Sigmoid
 from torch_geometric.data import Data, Dataset
 from torch_geometric.nn import GINEConv, global_mean_pool
 
-TRAIN_JSON = "dataset_v3_10000.json"
+TRAIN_JSON = "part_5_dataset4.json"
 TRAIN_CLEAN_INVALID_EDGES = True
-TRAIN_JSTAR_MIN = 0.01
-TRAIN_JSTAR_MAX = 0.99
+TRAIN_JSTAR_MIN = None
+TRAIN_JSTAR_MAX = None
 
 BENCHMARK_JSON = "JSON/dataset_hybrid_mesh_sp_er_v2_1000.json"
 BENCHMARK_CLEAN_INVALID_EDGES = True
@@ -21,8 +21,8 @@ TRAIN_VAL_SPLIT = 0.8
 SPLIT_SEED = 42
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
-NUM_EPOCHS = 50
-WANDB_RUN_NAME = "GINE_J*_V3f_50e"
+NUM_EPOCHS = 10
+WANDB_RUN_NAME = "GINE_J*_V4_10e"
 WANDB_GROUP = "Gine_J"
 
 

@@ -9,7 +9,7 @@ from torch_geometric.nn import GINEConv, global_add_pool
 import numpy as np
 
 
-TRAIN_JSON = "dataset_v3_10000.json"
+TRAIN_JSON = "part_5_dataset4.json"
 TRAIN_CLEAN_INVALID_EDGES = True
 TRAIN_JSTAR_MIN = None
 TRAIN_JSTAR_MAX = None
@@ -23,11 +23,11 @@ TRAIN_VAL_SPLIT = 0.8
 SPLIT_SEED = 42
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
-NUM_EPOCHS = 50
+NUM_EPOCHS = 10
 WANDB_RUN_NAME = "GINE_B_V3_50e"
 WANDB_GROUP = "Gine_B"
 SAVE_MODEL = True
-MODEL_SAVE_PATH = "checkpoints/gine_b_repartition_v3.pt"
+MODEL_SAVE_PATH = "checkpoints/gine_b_repartition_v4.pt"
 COMPUTE_DELTAJ = True
 DELTAJ_N_SIMS = 10000
 DELTAJ_MAX_INSTANCES = None

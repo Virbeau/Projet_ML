@@ -4,11 +4,18 @@ set -euo pipefail
 LOCAL_PROJECT_DIR="/users/local/l24virbe/Projet_ML"
 REMOTE_PROJECT_DIR="${REMOTE_PROJECT_DIR:-/users/local/l24virbe/Projet_ML}"
 ENV_ACTIVATE="${REMOTE_PROJECT_DIR}/env_projet/bin/activate"
-HOSTS_FILE="${LOCAL_PROJECT_DIR}/hosts_v3.txt"
+HOSTS_FILE="${HOSTS_FILE:-${LOCAL_PROJECT_DIR}/hosts_v3.txt}"
 RUN_ID="${1:-v3_60000}"
 TOTAL_INSTANCES="${2:-60000}"
 WORKERS_PER_HOST="${3:-3}"
 BASE_SEED="${4:-20260311}"
+SSH_OPTS=(
+  -n
+  -o BatchMode=yes
+  -o ConnectTimeout=3
+  -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null
+)
 
 REMOTE_OUT_DIR="${REMOTE_PROJECT_DIR}/distributed_runs/${RUN_ID}"
 REMOTE_LOG_DIR="${REMOTE_PROJECT_DIR}/distributed_runs/${RUN_ID}/logs"
@@ -29,7 +36,7 @@ fi
 READY_HOSTS=()
 for host in "${HOSTS[@]}"; do
   [[ -z "${host}" ]] && continue
-  if ssh -n -o BatchMode=yes -o ConnectTimeout=3 "${host}" "test -d '${REMOTE_PROJECT_DIR}'" >/dev/null 2>&1; then
+  if ssh "${SSH_OPTS[@]}" "${host}" "test -d '${REMOTE_PROJECT_DIR}'" >/dev/null 2>&1; then
     READY_HOSTS+=("${host}")
   else
     echo "[${host}] skipped (unreachable or missing ${REMOTE_PROJECT_DIR})"
@@ -68,7 +75,7 @@ for host in "${READY_HOSTS[@]}"; do
 
   echo "[${host}] launch count=${count} seed=${seed}"
 
-  if ssh -n -o BatchMode=yes "${host}" "bash -lc '
+  if ssh "${SSH_OPTS[@]}" "${host}" "bash -lc '
     set -e
     mkdir -p "${REMOTE_OUT_DIR}" "${REMOTE_LOG_DIR}"
     cd "${REMOTE_PROJECT_DIR}"

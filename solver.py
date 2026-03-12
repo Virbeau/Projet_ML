@@ -135,90 +135,54 @@ def compute_objective_J(G, terminals, criterion, params, pi, H, fail_mask=None):
     return h[start_state]
 
 
-def project_with_budget_fill(pi, c_cost, B, grad=None, tol=1e-10):
+dfrom scipy.optimize import minimize
+
+def solve_instance(G, terminals, criterion, params, H, B, seed=0, iters=25):
     """
-    Projection sur 0<=pi<=1 et budget "plein" quand possible.
-    - Si le cout depasse B: homothetie vers le bas.
-    - Si le cout est sous B: remplit le reliquat en priorisant les composantes
-      les plus prometteuses selon -grad (descente).
-    """
-    pi = np.clip(pi, 0.0, 1.0)
-
-    current_cost = float(np.sum(pi * c_cost))
-    if current_cost > B + tol and current_cost > 0.0:
-        pi = pi * (B / current_cost)
-        pi = np.clip(pi, 0.0, 1.0)
-        current_cost = float(np.sum(pi * c_cost))
-
-    remaining = B - current_cost
-    if remaining <= tol:
-        return np.clip(pi, 0.0, 1.0)
-
-    # Capacite residuelle maximale compte tenu des bornes pi<=1.
-    headroom_cost = float(np.sum((1.0 - pi) * c_cost))
-    if headroom_cost <= tol:
-        return np.clip(pi, 0.0, 1.0)
-
-    # Priorite: plus -grad est grand, plus on alloue en premier.
-    if grad is None:
-        priority = np.ones_like(pi)
-    else:
-        priority = -grad.copy()
-        priority = np.where(priority > 0.0, priority, 0.0)
-        if float(np.sum(priority)) <= tol:
-            priority = np.ones_like(pi)
-
-    order = np.argsort(-priority)
-
-    for i in order:
-        if remaining <= tol:
-            break
-        if c_cost[i] <= 0:
-            continue
-        max_delta = 1.0 - pi[i]
-        if max_delta <= tol:
-            continue
-
-        add = min(max_delta, remaining / c_cost[i])
-        if add > 0.0:
-            pi[i] += add
-            remaining -= add * c_cost[i]
-
-    return np.clip(pi, 0.0, 1.0)
-
-
-# --- L'Optimiseur (Calcul du label pi*) ---
-def projected_gradient_descent(G, terminals, criterion, params, H, B, lr=0.8, iters=25, eps=1e-3, verbose=False):
-    """
-    Trouve la meilleure allocation de budget (pi*) pour minimiser la panne.
+    Solveur propre utilisant SLSQP (Scipy) pour garantir le respect strict 
+    des mathématiques de l'optimisation sous contraintes.
     """
     m = len(params["repairable_nodes"])
-    pi = np.zeros(m) # On part avec 0 budget
-    c_cost = params["c_cost"]
-    hist = []
+    c_cost = np.array(params["c_cost"])
     
-    # On pré-calcule le fail_mask une seule fois pour gagner un temps énorme !
+    # 1. Pré-calcul du masque (pour la vitesse)
     fail_mask = get_fail_mask(G, terminals, criterion, params)
     
-    for it in range(iters):
-        # 1. Calcul du gradient (Différences finies)
-        grad = np.zeros(m)
-        J_current = compute_objective_J(G, terminals, criterion, params, pi, H, fail_mask)
+    # 2. Fonction objectif (Scipy cherche toujours à MINIMISER)
+    def objective(pi_array):
+        return compute_objective_J(G, terminals, criterion, params, pi_array, H, fail_mask)
+    
+    # 3. Contrainte de budget : la formule doit être >= 0 pour Scipy
+    # B - sum(pi * c) >= 0  =>  sum(pi * c) <= B
+    budget_constraint = {'type': 'ineq', 'fun': lambda pi_array: B - np.sum(pi_array * c_cost)}
+    
+    # 4. Bornes : 0 <= pi_i <= 1 pour chaque noeud
+    bounds = [(0.0, 1.0) for _ in range(m)]
+    
+    # 5. Point de départ : On donne un peu de budget partout pour "allumer" les gradients
+    # plutôt que de commencer à 0 absolu.
+    pi_0 = np.full(m, min(1.0, B / (np.sum(c_cost) + 1e-9))) 
+    
+    # 6. Lancement de l'optimiseur SLSQP
+    res = minimize(
+        objective, 
+        pi_0, 
+        method='SLSQP', 
+        bounds=bounds, 
+        constraints=[budget_constraint],
+        options={'maxiter': iters, 'ftol': 1e-6, 'disp': False}
+    )
+    
+    pi_opt = res.x
+    J_star = res.fun
+    
+    # 7. Formatage de la sortie (identique à ton ancien code)
+    pi_by_node = {params["repairable_nodes"][i]: float(pi_opt[i]) for i in range(len(pi_opt))}
+    for t in terminals:
+        pi_by_node[t] = 0.0
         
-        for i in range(m):
-            pi_eps = pi.copy()
-            pi_eps[i] = min(1.0, pi[i] + eps)
-            J_eps = compute_objective_J(G, terminals, criterion, params, pi_eps, H, fail_mask)
-            grad[i] = (J_eps - J_current) / eps
-            
-        # 2. Descente de gradient (J_current est une probabilité de panne, on veut la réduire)
-        pi_new = pi - lr * grad
-        
-        # 3. Projection sur le budget avec remplissage (vise sum(pi*c_cost)=B si possible)
-        pi = project_with_budget_fill(pi_new, c_cost, B, grad=grad)
-        hist.append(J_current)
-        
-    return pi, hist
+    # res.fun est le score final, on le met dans une liste pour remplacer 'hist'
+    return pi_opt, J_star, pi_by_node, [J_star]
 
 
 # --- Fonction Principale appelée par main.py ---

@@ -2,16 +2,23 @@
 set -uo pipefail
 
 PROJECT_DIR="/users/local/l24virbe/Projet_ML"
-HOSTS_FILE="${PROJECT_DIR}/hosts_v3.txt"
+HOSTS_FILE="${HOSTS_FILE:-${PROJECT_DIR}/hosts_v3.txt}"
 RUN_ID="${1:-v3_60000}"
 REMOTE_LOG_DIR="${PROJECT_DIR}/distributed_runs/${RUN_ID}/logs"
+SSH_OPTS=(
+  -n
+  -o BatchMode=yes
+  -o ConnectTimeout=3
+  -o StrictHostKeyChecking=no
+  -o UserKnownHostsFile=/dev/null
+)
 
 mapfile -t HOSTS < "${HOSTS_FILE}"
 
 echo "Status for run: ${RUN_ID}"
 for host in "${HOSTS[@]}"; do
   echo "--- ${host} ---"
-  if ! ssh -n -o BatchMode=yes "${host}" "
+  if ! ssh "${SSH_OPTS[@]}" "${host}" "
     if ls '${REMOTE_LOG_DIR}'/pid_*.txt >/dev/null 2>&1; then
       for p in '${REMOTE_LOG_DIR}'/pid_*.txt; do
         pid=\$(cat \"\$p\")

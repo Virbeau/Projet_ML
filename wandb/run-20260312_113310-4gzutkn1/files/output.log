@@ -1,0 +1,32 @@
+[ReliabilityDataset] 467 instances invalides ignorees sur 4286
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 472 / 908
+Datasets | train_val=3819 | benchmark=436
+Epoch 10/10
+Final metrics | node_mae=1.7119 | budget_viol=0/436 (mean_err=5.78e-07) | terminal_max=0.00e+00
+Modele sauvegarde: checkpoints/gine_b_repartition_v4.pt
+Calcul deltaJ...
+deltaJ: 0/436
+Traceback (most recent call last):
+  File "/users/local/l24virbe/Projet_ML/GINE_B_repartition.py", line 567, in <module>
+    delta_metrics = evaluate_industrial_regret(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/GINE_B_repartition.py", line 292, in evaluate_industrial_regret
+    J_gnn = simulate_monte_carlo(inst_to_simulate, n_sims=n_sims)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/monte_carlo_validation.py", line 55, in simulate_monte_carlo
+    if not fast_is_connected(G, source, target, up_rep_nodes):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/monte_carlo_validation.py", line 13, in fast_is_connected
+    subG = G_base.subgraph(valid_nodes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/classes/graph.py", line 1876, in subgraph
+    return subgraph(self, filter_node=induced_nodes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/classes/graphviews.py", line 207, in subgraph_view
+    newG = nx.freeze(G.__class__())
+                     ^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/classes/digraph.py", line 391, in __init__
+    attr.pop("backend", None)  # Ignore explicit `backend="networkx"`
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

@@ -1,0 +1,16 @@
+[ReliabilityDataset] 467 instances invalides ignorees sur 4286
+[ReliabilityDataset] 92 instances invalides ignorees sur 1000
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 472 / 908
+Train/val dataset: 3819 graphes
+Benchmark fixe: 436 graphes
+Traceback (most recent call last):
+  File "/users/local/l24virbe/Projet_ML/GINE_J_predictor.py", line 277, in <module>
+    loss.backward()
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/_tensor.py", line 630, in backward
+    torch.autograd.backward(
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/autograd/__init__.py", line 364, in backward
+    _engine_run_backward(
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/autograd/graph.py", line 865, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

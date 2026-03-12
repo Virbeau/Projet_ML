@@ -1,0 +1,25 @@
+Démarrage génération : 2026-03-11T19:27:46.278935
+Instances : 4286 (1/3 MESH + 1/3 SP + 1/3 ER)
+Règle B: B_ref = L * 5.5
+Règle C: alpha 80%[0.6,1.4], 10%[0.1,0.4], 10%[2.0,3.0]
+H Mesh: [15,25] | H SP/ER: [5,20]
+ER p: [0.30,0.45]
+Workers : 3
+======================================================================
+
+
+Génération terminée : 2026-03-12T01:08:53.889858
+Temps écoulé : 5h 41m 7.6s
+Temps moyen/graphe : 4.78s
+Graphes/heure : 754
+
+RÉSULTATS FINAUX:
+  - Instances générées: 4286
+  - MESH: 1428 | SP: 1428 | ER: 1430
+  - Fichier: /users/local/l24virbe/Projet_ML/distributed_runs/v2_60000_retry14/part_5_sl_tp_br_506.imta.fr.json
+  - H: 5-25
+  - L: 1-10
+  - alpha: 0.10-3.00
+  - alpha regimes: normal=3394, famine=461, abondance=431
+  - B: 0.55-88.18
+  - J*: 0.5766±0.4054
