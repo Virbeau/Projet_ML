@@ -1,0 +1,88 @@
+_wandb:
+    value:
+        cli_version: 0.25.1
+        e:
+            9p0ekwn0u8p7dyvz2ji59vtih7wpy1us:
+                codePath: GINE_B_repartition.py
+                codePathLocal: GINE_B_repartition.py
+                cpu_count: 4
+                cpu_count_logical: 4
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "105089261568"
+                        used: "73380728832"
+                email: louis.virbel@imt-atlantique.net
+                executable: /users/local/l24virbe/Projet_ML/env_projet/bin/python3
+                git:
+                    commit: 2c8c05ed834be3f18869b00e15486974bb01109e
+                    remote: https://github.com/Virbeau/Projet_ML.git
+                gpu: NVIDIA GeForce GTX 1060 6GB
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Pascal
+                      cudaCores: 1280
+                      memoryTotal: "6442450944"
+                      name: NVIDIA GeForce GTX 1060 6GB
+                      uuid: GPU-48803455-90bf-fd7e-0a00-28ba6b2c97b1
+                host: sl-tp-br-506
+                memory:
+                    total: "8288677888"
+                os: Linux-6.8.0-101-generic-x86_64-with-glibc2.39
+                program: /users/local/l24virbe/Projet_ML/GINE_B_repartition.py
+                python: CPython 3.12.3
+                root: /users/local/l24virbe/Projet_ML
+                startedAt: "2026-03-12T17:27:02.579727Z"
+                writerId: 9p0ekwn0u8p7dyvz2ji59vtih7wpy1us
+        m: []
+        python_version: 3.12.3
+        t:
+            "1":
+                - 1
+                - 77
+            "2":
+                - 1
+                - 77
+            "3":
+                - 2
+                - 13
+                - 16
+                - 62
+            "4": 3.12.3
+            "5": 0.25.1
+            "12": 0.25.1
+            "13": linux-x86_64
+batch_size:
+    value: 32
+benchmark_json:
+    value: benchmark_v6_40.json
+benchmark_jstar_max:
+    value: 0.99
+benchmark_jstar_min:
+    value: 0.01
+budget_tol:
+    value: 0.0001
+compute_deltaJ:
+    value: true
+deltaJ_max_instances:
+    value: null
+deltaJ_n_sims:
+    value: 1000
+epochs:
+    value: 10
+lr:
+    value: 0.001
+model_save_path:
+    value: checkpoints/gine_b_repartition_v6.pt
+save_model:
+    value: true
+split_seed:
+    value: 42
+train_json:
+    value: datasetV6.json
+train_jstar_max:
+    value: null
+train_jstar_min:
+    value: null
+wandb_group:
+    value: Gine_B

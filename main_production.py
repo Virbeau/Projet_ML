@@ -5,7 +5,6 @@ import networkx as nx
 from multiprocessing import Pool, cpu_count
 import random
 import time
-import sys
 import os
 import argparse
 
@@ -17,96 +16,138 @@ except ImportError:
     HAS_TQDM = False
     print("⚠️  tqdm non disponible. Installez-le avec: pip install tqdm")
 
-# 1. On importe les trois générateurs !
 from generate_mesh1 import generate_mesh_instance
 from generate_sp1 import generate_sp_instance
 from generate_er import generate_er_instance
 from solver import solve_instance 
 
 
-def sample_crisis_multiplier():
+def get_budget_alpha(graph_type):
     """
-    Tire alpha selon la règle C:
-      - 80%: alpha in [0.6, 1.4]
-      - 10%: alpha in [0.1, 0.4] (famine)
-      - 10%: alpha in [2.0, 3.0] (abondance)
-    Retourne (alpha, regime)
+    Tire le multiplicateur alpha avec une Loi Normale adaptée à la topologie.
+    On centre la gaussienne autour du coût du chemin critique pour cibler J* ~ 0.5.
     """
-    r = random.random()
-    if r < 0.80:
-        return random.uniform(0.6, 1.4), "normal"
-    if r < 0.90:
-        return random.uniform(0.1, 0.4), "famine"
-    return random.uniform(2.0, 3.0), "abondance"
+    if graph_type == "mesh":
+        # Les mesh sont redondants. On est plus sévère sur le budget.
+        mu, sigma = 0.8, 0.2
+    elif graph_type == "sp":
+        # Les SP ont des goulots d'étranglement, ils ont besoin d'un peu plus.
+        mu, sigma = 1.1, 0.3
+    else:
+        # Les ER sont chaotiques et souvent fragiles.
+        mu, sigma = 1.2, 0.3
+        
+    alpha = np.random.normal(loc=mu, scale=sigma)
+    # On évite les extrêmes absurdes
+    return float(np.clip(alpha, 0.2, 2.0))
 
-
-def compute_anchor_budget(G, source, target):
-    """
-    Règle B: Bref = L * 5.5, où L est la longueur du plus court chemin S->T.
-    """
-    L = nx.shortest_path_length(G, source=source, target=target)
-    B_ref = L * 5.5
-    return L, B_ref
 
 def process_single_instance(args):
     """
-    Fonction worker pour générer une instance en parallèle.
-    Prend un tuple (index, graph_type, params, H, iters) et retourne le record complet.
-    graph_type: "mesh", "sp", ou "er"
-    params: pour mesh = (m, n), pour sp = (num_repairable,), pour er = (num_nodes, p)
+    Fonction worker avec Filtre de Jouabilité.
+    Boucle jusqu'à trouver un graphe "intéressant" (où 0.5 est atteignable).
     """
-    i, graph_type, params, H, iters = args
-    
-    # ÉTAPE A : Génération de la topologie selon le type
-    if graph_type == "mesh":
-        m, n = params
-        G, record = generate_mesh_instance(m=m, n=n, seed=i)
-        graph_label = f"{m}x{n}"
-    elif graph_type == "sp":
-        num_repairable = params[0]
-        G, record = generate_sp_instance(num_repairable=num_repairable, seed=i)
-        graph_label = f"sp{num_repairable}"
-    else:  # graph_type == "er"
-        num_nodes, p = params
-        G, record = generate_er_instance(num_nodes=num_nodes, p=p, seed=i)
-        graph_label = f"n{num_nodes}_p{p}"
-    
-    # Préparation des paramètres pour le solveur (identique pour les deux types)
-    terminals = record["terminals"]
-    source, target = terminals[0], terminals[1]
+    base_seed, graph_type, params, H, iters = args
+    attempt = 0
+    MAX_ATTEMPTS = 200
 
-    # ===== Règles B & C : Budget ancré sur le plus court chemin + multiplicateur de crise =====
-    L, B_ref = compute_anchor_budget(G, source, target)
-    alpha, alpha_regime = sample_crisis_multiplier()
-    B = round(alpha * B_ref, 2)
+    G = record = graph_label = None
+    C_min_path = alpha = B = J_min = J_max = pi_star = J_star = L = None
+    c_cost_repairable = None
+    params_solver = None
+    repairable_nodes = terminals = source = target = None
 
-    repairable_nodes = record["repairable_nodes"]
-    p_fail_repairable = np.array([record["features"][v]["p_fail"] for v in repairable_nodes])
-    c_cost_repairable = np.array([record["features"][v]["c_cost"] for v in repairable_nodes])
-    
-    params_solver = {
-        "p_fail": p_fail_repairable,
-        "c_cost": c_cost_repairable,
-        "repairable_nodes": repairable_nodes
-    }
-    
-    # ÉTAPE B : Calcul de la solution optimale
-    pi_star, J_star, _, _ = solve_instance(
-        G=G, 
-        terminals=terminals, 
-        criterion="terminal_connectivity", 
-        params=params_solver, 
-        H=H, 
-        B=B, 
-        iters=iters
-    )
-    
-    # ÉTAPE C : Conversion au format GNN (PyTorch Geometric)
-    all_nodes = sorted(G.nodes())  # Ordre déterministe
+    while attempt < MAX_ATTEMPTS:
+        current_seed = base_seed + (attempt * 10000)
+        attempt += 1
+        
+        # 1. Génération
+        if graph_type == "mesh":
+            m, n = params
+            G, record = generate_mesh_instance(m=m, n=n, seed=current_seed)
+            graph_label = f"{m}x{n}"
+        elif graph_type == "sp":
+            num_repairable = params[0]
+            G, record = generate_sp_instance(num_repairable=num_repairable, seed=current_seed)
+            graph_label = f"sp{num_repairable}"
+        else:
+            num_nodes, p = params
+            G, record = generate_er_instance(num_nodes=num_nodes, p=p, seed=current_seed)
+            graph_label = f"n{num_nodes}_p{p}"
+            
+        terminals = record["terminals"]
+        source, target = terminals[0], terminals[-1]
+        repairable_nodes = record["repairable_nodes"]
+        
+        p_fail_repairable = np.array([record["features"][v]["p_fail"] for v in repairable_nodes])
+        c_cost_repairable = np.array([record["features"][v]["c_cost"] for v in repairable_nodes])
+        
+        params_solver = {
+            "p_fail": p_fail_repairable,
+            "c_cost": c_cost_repairable,
+            "repairable_nodes": repairable_nodes
+        }
+        
+        C_total = float(sum(c_cost_repairable))
+        if C_total <= 0: C_total = 1.0
+
+        # ==========================================================
+        # 2. FILTRE DE JOUABILITÉ (Le réseau est-il intéressant ?)
+        # ==========================================================
+        _, J_min, _, _ = solve_instance(G, terminals, "terminal_connectivity", params_solver, H, C_total, iters=iters)
+        if J_min > 0.60:
+            continue
+            
+        _, J_max, _, _ = solve_instance(G, terminals, "terminal_connectivity", params_solver, H, 0.0, iters=iters)
+        if J_max < 0.40:
+            continue
+
+        # ==========================================================
+        # 3. TIRAGE DU BUDGET (Gaussienne Ajustée)
+        # ==========================================================
+        def node_cost(n):
+            return record["features"][n]["c_cost"] if n in repairable_nodes else 0.0
+            
+        def edge_weight(u, v, d):
+            return node_cost(v)
+            
+        try:
+            cheapest_path = nx.shortest_path(G, source=source, target=target, weight=edge_weight)
+            C_min_path = sum(node_cost(n) for n in cheapest_path)
+        except nx.NetworkXNoPath:
+            continue
+
+        if C_min_path <= 0.01: C_min_path = 0.5
+        
+        alpha = get_budget_alpha(graph_type)
+        B = round(alpha * C_min_path, 2)
+        
+        # 4. Résolution Finale avec le vrai budget B
+        pi_star, J_star, _, _ = solve_instance(
+            G=G, terminals=terminals, criterion="terminal_connectivity", 
+            params=params_solver, H=H, B=B, iters=iters
+        )
+        
+        L = nx.shortest_path_length(G, source=source, target=target)
+        break
+    else:
+        # Fallback MAX_ATTEMPTS atteint : on force avec le dernier graphe généré
+        C_min_path = float(np.sum(c_cost_repairable)) * 0.5 if c_cost_repairable is not None else 1.0
+        if C_min_path <= 0: C_min_path = 1.0
+        alpha = get_budget_alpha(graph_type)
+        B = round(alpha * C_min_path, 2)
+        pi_star, J_star, _, _ = solve_instance(
+            G=G, terminals=terminals, criterion="terminal_connectivity",
+            params=params_solver, H=H, B=B, iters=iters
+        )
+        J_min = J_max = float(J_star)
+        L = nx.shortest_path_length(G, source=source, target=target)
+        C_total = float(np.sum(c_cost_repairable)) if c_cost_repairable is not None else 1.0
+
+    # 5. Conversion au format GNN
+    all_nodes = sorted(G.nodes())
     n_nodes = len(all_nodes)
     
-    # Construction de la matrice de features X (n_nodes × 9)
-    # Features: [p_fail, c_cost, is_source, is_target, in_degree, out_degree, distance_to_target, B, H]
     x = []
     for node in all_nodes:
         feat = record["features"][node]
@@ -118,304 +159,145 @@ def process_single_instance(args):
             float(feat["in_degree"]),
             float(feat["out_degree"]),
             float(feat["distance_to_target"]),
-            B,  # Budget global (répété pour chaque nœud)
-            float(H)  # Horizon global (répété pour chaque nœud)
+            B,  
+            float(H) 
         ])
     
-    # Construction du vecteur de labels Y (n_nodes)
-    # pi_star contient les valeurs pour les nœuds réparables uniquement
-    # On met 0.0 pour les terminaux (non réparables)
     y = []
-    pi_dict = {repairable_nodes[i]: float(pi_star[i]) for i in range(len(pi_star))}
+    pi_dict = {repairable_nodes[idx]: float(pi_star[idx]) for idx in range(len(pi_star))}
     for node in all_nodes:
-        if node in terminals:
-            y.append(0.0)  # Terminaux : pas de réparation allouée
-        else:
-            y.append(pi_dict[node])
-    
-    # Format GNN-ready
+        y.append(0.0 if node in terminals else pi_dict[node])
+        
     gnn_record = {
         "topology_type": f"{graph_type}_{graph_label}",
         "B": float(B),
-        "B_ref": float(B_ref),
+        "C_min_path": float(C_min_path),
+        "C_total": float(C_total),
         "alpha": float(alpha),
-        "alpha_regime": alpha_regime,
         "shortest_path_length": int(L),
         "H": int(H),
+        "attempts_needed": attempt, # Info debug
+        "J_min": float(J_min),
+        "J_max": float(J_max),
         "graph": {
             "nodes": all_nodes,
             "edges": list(G.edges()),
             "is_directed": True
         },
-        "x": x,  # Matrice de features (n_nodes × 9)
-        "y": y,  # Labels (n_nodes)
+        "x": x,
+        "y": y,
         "J_star": float(J_star),
-        
-        # Métadonnées additionnelles (optionnel, pour debug)
         "terminals": terminals,
         "repairable_nodes": repairable_nodes,
         "n_nodes": n_nodes,
         "n_edges": len(G.edges())
     }
-    
     return gnn_record
+        # 5. Conversion au format GNN
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Génération dataset hybride mesh/sp/er (format v2)")
+    parser = argparse.ArgumentParser(description="Génération dataset hybride avec Gaussienne & Filtre de Jouabilité")
     parser.add_argument("--n-instances", type=int, default=1000, help="Nombre total d'instances à générer")
-    parser.add_argument("--seed", type=int, default=42, help="Seed globale pour l'échantillonnage des tâches")
-    parser.add_argument(
-        "--out-path",
-        type=str,
-        default="dataset_hybrid_mesh_sp_er_v2_1000.json",
-        help="Chemin du fichier JSON de sortie",
-    )
-    parser.add_argument(
-        "--log-file",
-        type=str,
-        default="generation_progress.log",
-        help="Fichier de log de progression",
-    )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=None,
-        help="Nombre de workers (défaut: min(3, cpu_count(), n_instances))",
-    )
+    parser.add_argument("--seed", type=int, default=42, help="Seed globale")
+    parser.add_argument("--out-path", type=str, default="dataset_hybrid_filtered_v3.json", help="Fichier JSON de sortie")
+    parser.add_argument("--log-file", type=str, default="generation_progress.log", help="Log de progression")
+    parser.add_argument("--workers", type=int, default=None, help="Nombre de workers")
     args = parser.parse_args()
 
-    # ========== CONFIGURATION ==========
     n_instances = args.n_instances
-
-    # ===== PLAGES POUR H (B est désormais calculé via règles B/C) =====
-    H_default_min, H_default_max = 5, 20      # SP / ER
-    H_mesh_min, H_mesh_max = 15, 25           # Spécifique Mesh
     
-    # ===== CONFIGURATIONS MESH (1/3 du dataset) =====
-    # Variété de 4 à 12 nœuds (2 à 10 réparables)
+    # HORIZONS RÉDUITS pour éviter la mort inévitable du réseau
+    H_default_min, H_default_max = 5, 12   # SP / ER
+    H_mesh_min, H_mesh_max = 5, 12        # Mesh
+    
     mesh_configs = [
-        ("mesh", (2, 2), 20),  # 4 noeuds,   2 réparables, 4 états     - RAPIDE
-        ("mesh", (2, 3), 25),  # 6 noeuds,   4 réparables, 16 états    - RAPIDE
-        ("mesh", (3, 2), 25),  # 6 noeuds,   4 réparables, 16 états    - RAPIDE
-        ("mesh", (3, 3), 35),  # 9 noeuds,   7 réparables, 128 états   - MOYEN
-        ("mesh", (2, 4), 30),  # 8 noeuds,   6 réparables, 64 états    - MOYEN
-        ("mesh", (2, 5), 35),  # 10 noeuds,  8 réparables, 256 états   - MOYEN
-        ("mesh", (3, 4), 50),  # 12 noeuds, 10 réparables, 1024 états  - LENT
-        ("mesh", (4, 3), 50),  # 12 noeuds, 10 réparables, 1024 états  - LENT
+        ("mesh", (2, 2), 20), ("mesh", (2, 3), 25), ("mesh", (3, 2), 25), 
+        ("mesh", (3, 3), 35), ("mesh", (2, 4), 30), ("mesh", (2, 5), 35), 
+        ("mesh", (3, 4), 50), ("mesh", (4, 3), 50),
     ]
-    # Distribution pondérée : plus de petits (rapides), moins de gros (lents)
-    mesh_weights = [0.10, 0.10, 0.15, 0.20, 0.20, 0.13, 0.09, 0.03]  # Somme = 1.0
+    mesh_weights = [0.10, 0.10, 0.15, 0.20, 0.20, 0.13, 0.09, 0.03]
     
-    # ===== CONFIGURATIONS SÉRIE-PARALLÈLE (1/3 du dataset) =====
-    # Variété de 4 à 12 nœuds (2 à 10 réparables)
     sp_configs = [
-        ("sp", (2,), 20),   # 4 noeuds total,   2 réparables, 4 états     - RAPIDE
-        ("sp", (3,), 20),   # 5 noeuds total,   3 réparables, 8 états     - RAPIDE
-        ("sp", (4,), 25),   # 6 noeuds total,   4 réparables, 16 états    - RAPIDE
-        ("sp", (5,), 30),   # 7 noeuds total,   5 réparables, 32 états    - RAPIDE
-        ("sp", (6,), 30),   # 8 noeuds total,   6 réparables, 64 états    - MOYEN
-        ("sp", (7,), 35),   # 9 noeuds total,   7 réparables, 128 états   - MOYEN
-        ("sp", (8,), 40),   # 10 noeuds total,  8 réparables, 256 états   - MOYEN
-        ("sp", (9,), 45),   # 11 noeuds total,  9 réparables, 512 états   - LENT
-        ("sp", (10,), 50),  # 12 noeuds total, 10 réparables, 1024 états  - LENT
+        ("sp", (2,), 20), ("sp", (3,), 20), ("sp", (4,), 25), 
+        ("sp", (5,), 30), ("sp", (6,), 30), ("sp", (7,), 35), 
+        ("sp", (8,), 40), ("sp", (9,), 45), ("sp", (10,), 50),
     ]
-    # Distribution pondérée : plus de petits (rapides), moins de gros (lents)
-    sp_weights = [0.12, 0.12, 0.15, 0.18, 0.18, 0.12, 0.08, 0.03, 0.02]  # Somme = 1.0
+    sp_weights = [0.12, 0.12, 0.15, 0.18, 0.18, 0.12, 0.08, 0.03, 0.02]
     
-    # ===== CONFIGURATIONS ERDŐS-RÉNYI (1/3 du dataset) =====
-    # Variété de 4 à 12 nœuds avec différentes densités p
     er_configs = [
-        ("er", (4,), 20),
-        ("er", (5,), 20),
-        ("er", (6,), 25),
-        ("er", (7,), 30),
-        ("er", (8,), 30),
-        ("er", (9,), 35),
-        ("er", (10,), 40),
-        ("er", (11,), 45),
-        ("er", (12,), 50),
+        ("er", (4,), 20), ("er", (5,), 20), ("er", (6,), 25),
+        ("er", (7,), 30), ("er", (8,), 30), ("er", (9,), 35),
+        ("er", (10,), 40), ("er", (11,), 45), ("er", (12,), 50),
     ]
-    # Distribution pondérée : plus de petits (rapides), moins de gros (lents)
-    er_weights = [0.12, 0.12, 0.15, 0.18, 0.18, 0.12, 0.08, 0.03, 0.02]  # Somme = 1.0
+    er_weights = [0.12, 0.12, 0.15, 0.18, 0.18, 0.12, 0.08, 0.03, 0.02]
     
-    # Configuration simplifiée : répartition 1/3 pour chaque type
     n_mesh = n_instances // 3
     n_sp = n_instances // 3
     n_er = n_instances - n_mesh - n_sp
     
-    print("\nGÉNÉRATION DATASET HYBRIDE - RÈGLES B/C + AJUSTEMENTS TOPOLOGIQUES")
-    print(
-        f"Configuration : {n_instances} instances (1/3 MESH + 1/3 SP + 1/3 ER) | "
-        f"Tailles: 4-12 nœuds | H_mesh: [{H_mesh_min},{H_mesh_max}] | H_sp/er: [{H_default_min},{H_default_max}]"
-    )
+    print("\nGÉNÉRATION DATASET HYBRIDE - GAUSSIENNE ADAPTATIVE & FILTRE")
     
-    # ========== GÉNÉRATION DES TÂCHES ==========
     random.seed(args.seed)
     tasks = []
     
-    # Génération des tâches MESH (première tercio)
     for i in range(n_mesh):
         graph_type, params, iters = random.choices(mesh_configs, weights=mesh_weights)[0]
         H = random.randint(H_mesh_min, H_mesh_max)
         tasks.append((i, graph_type, params, H, iters))
     
-    # Génération des tâches SP (deuxième tercio)
     for i in range(n_mesh, n_mesh + n_sp):
         graph_type, params, iters = random.choices(sp_configs, weights=sp_weights)[0]
         H = random.randint(H_default_min, H_default_max)
         tasks.append((i, graph_type, params, H, iters))
     
-    # Génération des tâches ER (troisième tercio)
     for i in range(n_mesh + n_sp, n_instances):
         graph_type, params, iters = random.choices(er_configs, weights=er_weights)[0]
-        num_nodes = params[0]
         p = round(random.uniform(0.30, 0.45), 2)
         H = random.randint(H_default_min, H_default_max)
-        tasks.append((i, graph_type, (num_nodes, p), H, iters))
+        tasks.append((i, graph_type, (params[0], p), H, iters))
     
     random.shuffle(tasks)
     
-    # ========== PARALLÉLISATION AVEC SUIVI ==========
-    if args.workers is None:
-        n_workers = min(3, cpu_count(), n_instances)
-    else:
-        n_workers = max(1, min(args.workers, cpu_count(), n_instances))
-    log_file = args.log_file
-    
-    # Ouverture du fichier log
-    with open(log_file, "w") as log:
-        log.write(f"Démarrage génération : {datetime.now().isoformat()}\n")
-        log.write(f"Instances : {n_instances} (1/3 MESH + 1/3 SP + 1/3 ER)\n")
-        log.write("Règle B: B_ref = L * 5.5\n")
-        log.write("Règle C: alpha 80%[0.6,1.4], 10%[0.1,0.4], 10%[2.0,3.0]\n")
-        log.write(f"H Mesh: [{H_mesh_min},{H_mesh_max}] | H SP/ER: [{H_default_min},{H_default_max}]\n")
-        log.write("ER p: [0.30,0.45]\n")
-        log.write(f"Workers : {n_workers}\n")
-        log.write("="*70 + "\n\n")
+    n_workers = args.workers if args.workers is not None else min(3, cpu_count(), n_instances)
     
     print(f"\n⚙️  Génération en cours ({n_workers} workers)...")
-    print(f"📊 Suivi disponible dans : {log_file}\n")
     
-    # Barre de progression
     start_time = time.time()
-    
     if HAS_TQDM:
         with Pool(processes=n_workers) as pool:
-            dataset = list(tqdm(
-                pool.imap_unordered(process_single_instance, tasks),
-                total=n_instances,
-                unit="graph",
-                desc="Génération",
-                ncols=80,
-                position=0,
-                leave=True
-            ))
+            dataset = list(tqdm(pool.imap_unordered(process_single_instance, tasks), total=n_instances))
     else:
-        # Fallback sans tqdm
         with Pool(processes=n_workers) as pool:
             dataset = pool.map(process_single_instance, tasks)
-            print(f"Traitement : {len(dataset)}/{n_instances} graphes générés")
     
     elapsed_time = time.time() - start_time
     
-    # Statistiques de génération
-    with open(log_file, "a") as log:
-        log.write(f"\nGénération terminée : {datetime.now().isoformat()}\n")
-        log.write(f"Temps écoulé : {elapsed_time//3600:.0f}h {(elapsed_time%3600)//60:.0f}m {elapsed_time%60:.1f}s\n")
-        log.write(f"Temps moyen/graphe : {elapsed_time/n_instances:.2f}s\n")
-        log.write(f"Graphes/heure : {n_instances/(elapsed_time/3600):.0f}\n")
-    
-    # ========== SAUVEGARDE ==========
-    out_path = args.out_path
-    
-    with open(out_path, "w") as f:
+    with open(args.out_path, "w") as f:
         json.dump({
             "metadata": {
                 "generated_at": datetime.now().isoformat(),
                 "n_instances": n_instances,
-                "n_mesh": n_mesh,
-                "n_sp": n_sp,
-                "n_er": n_er,
-                "H_range_mesh": {"min": H_mesh_min, "max": H_mesh_max},
-                "H_range_sp_er": {"min": H_default_min, "max": H_default_max},
-                "budget_rule": {
-                    "anchor": "B_ref = shortest_path_length * 5.5",
-                    "alpha_distribution": {
-                        "normal": {"probability": 0.80, "range": [0.6, 1.4]},
-                        "famine": {"probability": 0.10, "range": [0.1, 0.4]},
-                        "abondance": {"probability": 0.10, "range": [2.0, 3.0]}
-                    }
-                },
-                "er_p_range": {"min": 0.30, "max": 0.45},
-                "mesh_configs": [{"type": gt, "params": p, "iters": it, "weight": w} 
-                                  for (gt, p, it), w in zip(mesh_configs, mesh_weights)],
-                "sp_configs": [{"type": gt, "params": p, "iters": it, "weight": w} 
-                                for (gt, p, it), w in zip(sp_configs, sp_weights)],
-                "er_configs": [{"type": gt, "params": p, "iters": it, "weight": w} 
-                                for (gt, p, it), w in zip(er_configs, er_weights)]
+                "budget_rule": "Alpha Normal Distribution centered on C_min_path (Mesh:0.8, SP:1.1, ER:1.2)",
+                "filter_rule": "Rejected if J_min > 0.60 or J_max < 0.40"
             },
             "instances": dataset
         }, f, indent=2)
     
-    # ========== STATISTIQUES FINALES ==========
-    H_values = [r["H"] for r in dataset]
-    B_values = [r["B"] for r in dataset]
+    # ========== STATISTIQUES ==========
     alpha_values = [r["alpha"] for r in dataset]
-    L_values = [r["shortest_path_length"] for r in dataset]
     j_values = [r["J_star"] for r in dataset]
-    n_nodes_values = [r["n_nodes"] for r in dataset]
-    regime_counts = {"normal": 0, "famine": 0, "abondance": 0}
-    for r in dataset:
-        regime_counts[r["alpha_regime"]] = regime_counts.get(r["alpha_regime"], 0) + 1
+    attempts = [r["attempts_needed"] for r in dataset]
     
-    # Comptage par type de topologie
-    topology_counts = {}
-    for r in dataset:
-        topo_type = r["topology_type"].split("_")[0]
-        topology_counts[topo_type] = topology_counts.get(topo_type, 0) + 1
-    
-    # Affichage résumé
     print("="*70)
     print("✅ GÉNÉRATION COMPLÈTE")
+    print(f"⏱️  Temps total : {elapsed_time:.1f}s")
+    print(f"\n📈 Statistiques du nouveau Dataset :")
+    print(f"   • Rejets moyens par instance : {np.mean(attempts)-1:.1f}")
+    print(f"   • α appliqué (Budget/C_min_path) : {min(alpha_values):.2f} à {max(alpha_values):.2f}")
+    print(f"   • J* (Probabilité de panne) : {min(j_values):.4f} à {max(j_values):.4f}")
+    print(f"   • Moyenne de J* : {np.mean(j_values):.4f} (Devrait être centrée !)")
     print("="*70)
-    print(f"\n📊 Instances : {n_instances}")
-    print(f"   MESH: {topology_counts.get('mesh', 0):,} | SP: {topology_counts.get('sp', 0):,} | ER: {topology_counts.get('er', 0):,}")
-    print(f"\n⏱️  Temps total : {elapsed_time//3600:.0f}h {(elapsed_time%3600)//60:.0f}m {elapsed_time%60:.1f}s")
-    print(f"   Temps moyen/graphe : {elapsed_time/n_instances:.3f}s")
-    print(f"   Débit : {n_instances/(elapsed_time/3600):.0f} graphes/heure")
-    print(f"\n📁 Fichier : {out_path}")
-    if os.path.exists(out_path):
-        print(f"   Taille : {os.path.getsize(out_path) / (1024*1024):.1f} MB")
-    print(f"\n📈 Statistiques générées :")
-    print(f"   • H (Horizon) : {min(H_values)}-{max(H_values)} (moy: {np.mean(H_values):.1f})")
-    print(f"   • L (Plus court chemin) : {min(L_values)}-{max(L_values)} (moy: {np.mean(L_values):.2f})")
-    print(f"   • α (Crise) : {min(alpha_values):.2f}-{max(alpha_values):.2f} (moy: {np.mean(alpha_values):.2f})")
-    print(
-        f"     Régimes α -> normal: {regime_counts.get('normal', 0)} | "
-        f"famine: {regime_counts.get('famine', 0)} | abondance: {regime_counts.get('abondance', 0)}"
-    )
-    print(f"   • B (Budget final)  : {min(B_values):.2f}-{max(B_values):.2f} (moy: {np.mean(B_values):.2f})")
-    print(f"   • J* (Fiabilité) : {min(j_values):.4f}-{max(j_values):.4f} (moy: {np.mean(j_values):.4f}±{np.std(j_values):.4f})")
-    print(f"   • Nœuds/graphe : {min(n_nodes_values)}-{max(n_nodes_values)} (moy: {np.mean(n_nodes_values):.1f})")
-    print("\n" + "="*70)
-    
-    # Mise à jour du log final
-    with open(log_file, "a") as log:
-        log.write(f"\nRÉSULTATS FINAUX:\n")
-        log.write(f"  - Instances générées: {n_instances}\n")
-        log.write(f"  - MESH: {topology_counts.get('mesh', 0)} | SP: {topology_counts.get('sp', 0)} | ER: {topology_counts.get('er', 0)}\n")
-        log.write(f"  - Fichier: {out_path}\n")
-        log.write(f"  - H: {min(H_values)}-{max(H_values)}\n")
-        log.write(f"  - L: {min(L_values)}-{max(L_values)}\n")
-        log.write(f"  - alpha: {min(alpha_values):.2f}-{max(alpha_values):.2f}\n")
-        log.write(
-            f"  - alpha regimes: normal={regime_counts.get('normal', 0)}, "
-            f"famine={regime_counts.get('famine', 0)}, abondance={regime_counts.get('abondance', 0)}\n"
-        )
-        log.write(f"  - B: {min(B_values):.2f}-{max(B_values):.2f}\n")
-        log.write(f"  - J*: {np.mean(j_values):.4f}±{np.std(j_values):.4f}\n")
-
 
 if __name__ == "__main__":
     main()

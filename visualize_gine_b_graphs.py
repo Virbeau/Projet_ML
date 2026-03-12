@@ -1,15 +1,18 @@
 import argparse
 import json
+import random
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 import torch
 
 from GINE_B_repartition import GINE_Allocation_Predictor
+from monte_carlo_validation import simulate_monte_carlo
 
-DATASET_JSON = "JSON/dataset_hybrid_mesh_sp_er_v2_1000.json"
-MODEL_PATH = "checkpoints/gine_b_repartition_v4.pt"
-OUTPUT_PATH = "gine_b_3_families_comparison.png"
+DATASET_JSON = "benchmark_v6_40.json"
+MODEL_PATH = "checkpoints/gine_b_repartition_v6.pt"
+OUTPUT_PATH = "gine_b_graphV6.png"
 DEVICE = "cpu"
 BUDGET_TOL = 1e-4
 
@@ -46,7 +49,14 @@ def prepare_model_inputs_from_instance(inst):
         elif isinstance(terminal, int) and 0 <= terminal < x.size(0):
             terminal_mask[terminal] = True
 
-    return x, edge_index, edge_attr, batch, b_total, terminal_mask
+    # Vrais coûts de réparation depuis x[:,1] AVANT normalisation
+    c_list = inst.get("c_cost", inst.get("params", {}).get("c_cost", None))
+    if c_list is not None:
+        c_cost = torch.tensor(c_list, dtype=torch.float32)
+    else:
+        c_cost = torch.tensor([row[1] for row in inst["x"]], dtype=torch.float32)
+
+    return x, edge_index, edge_attr, batch, b_total, terminal_mask, c_cost
 
 
 def family_from_topology(inst):
@@ -60,20 +70,19 @@ def family_from_topology(inst):
     return None
 
 
-def pick_three_families(instances):
-    picked = {}
+def pick_three_families(instances, seed=None):
+    by_fam = {"mesh": [], "sp": [], "er": []}
     for inst in instances:
         fam = family_from_topology(inst)
-        if fam in ("mesh", "sp", "er") and fam not in picked:
-            picked[fam] = inst
-        if len(picked) == 3:
-            break
+        if fam in by_fam:
+            by_fam[fam].append(inst)
 
-    missing = [fam for fam in ("mesh", "sp", "er") if fam not in picked]
+    missing = [fam for fam, pool in by_fam.items() if not pool]
     if missing:
         raise RuntimeError(f"Familles introuvables dans le dataset: {missing}")
 
-    return [picked["mesh"], picked["sp"], picked["er"]]
+    rng = random.Random(seed)
+    return [rng.choice(by_fam["mesh"]), rng.choice(by_fam["sp"]), rng.choice(by_fam["er"])]
 
 
 def build_graph(inst):
@@ -87,16 +96,32 @@ def build_graph(inst):
 
 
 def predict_allocation(model, inst, device):
-    x, edge_index, edge_attr, batch, b_total, terminal_mask = prepare_model_inputs_from_instance(inst)
+    x, edge_index, edge_attr, batch, b_total, terminal_mask, c_cost = prepare_model_inputs_from_instance(inst)
     x = x.to(device)
     edge_index = edge_index.to(device)
     edge_attr = edge_attr.to(device)
     batch = batch.to(device)
     b_total = b_total.to(device)
     terminal_mask = terminal_mask.to(device)
+    c_cost = c_cost.to(device)
     with torch.no_grad():
-        pred = model(x, edge_index, edge_attr, batch, b_total, terminal_mask)
+        pred = model(x, edge_index, edge_attr, batch, b_total, terminal_mask, c_cost)
     return pred.detach().cpu().numpy().reshape(-1)
+
+
+def compute_budget_spent_from_cost(inst, alloc):
+    costs = np.array([float(feat[1]) for feat in inst.get("x", [])], dtype=float)
+    alloc_arr = np.array(alloc, dtype=float)
+    if costs.size == 0 or alloc_arr.size == 0:
+        return 0.0
+    n = min(costs.size, alloc_arr.size)
+    return float(np.dot(costs[:n], alloc_arr[:n]))
+
+
+def predict_j_from_allocation(inst, alloc, n_sims_j):
+    inst_pred = dict(inst)
+    inst_pred["y"] = [float(v) for v in alloc]
+    return float(simulate_monte_carlo(inst_pred, n_sims=n_sims_j))
 
 
 def draw_source_target(ax, g, pos, inst):
@@ -154,7 +179,7 @@ def check_budget_constraint(instances, model, device, tol=BUDGET_TOL):
     }
 
 
-def plot_comparison(instances, model, output_path, device):
+def plot_comparison(instances, model, output_path, device, n_sims_j):
     fig, axes = plt.subplots(3, 2, figsize=(14, 18))
 
     for row, inst in enumerate(instances):
@@ -171,6 +196,15 @@ def plot_comparison(instances, model, output_path, device):
         model_sum = float(model_alloc.sum())
         solver_abs_err = abs(solver_sum - budget)
         model_abs_err = abs(model_sum - budget)
+
+        solver_spent = compute_budget_spent_from_cost(inst, solver_alloc)
+        model_spent = compute_budget_spent_from_cost(inst, model_alloc)
+        solver_spent_pct = (100.0 * solver_spent / budget) if budget > 0 else 0.0
+        model_spent_pct = (100.0 * model_spent / budget) if budget > 0 else 0.0
+
+        j_real = float(inst.get("J_star", 0.0))
+        j_pred = predict_j_from_allocation(inst, model_alloc, n_sims_j=n_sims_j)
+        delta_j = j_pred - j_real
 
         vmin = min(min(solver_alloc), float(model_alloc.min()))
         vmax = max(max(solver_alloc), float(model_alloc.max()))
@@ -200,7 +234,8 @@ def plot_comparison(instances, model, output_path, device):
         draw_source_target(ax_left, g, pos, inst)
         ax_left.set_title(
             f"{family.upper()} | Solveur (y) | {topology}\n"
-            f"B={budget:.3f} | Somme(y)={solver_sum:.3f} | |err|={solver_abs_err:.2e}"
+            f"B={budget:.3f} | Somme(y)={solver_sum:.3f} | |err|={solver_abs_err:.2e}\n"
+            f"Budget distribue(cout)={solver_spent:.3f} ({solver_spent_pct:.1f}%) | J_reel={j_real:.4f}"
             + (" | dirige" if is_directed else " | non dirige")
         )
         ax_left.axis("off")
@@ -230,7 +265,9 @@ def plot_comparison(instances, model, output_path, device):
         draw_source_target(ax_right, g, pos, inst)
         ax_right.set_title(
             f"{family.upper()} | Modele entraine\n"
-            f"B={budget:.3f} | Somme(pred)={model_sum:.3f} | |err|={model_abs_err:.2e}"
+            f"B={budget:.3f} | Somme(pred)={model_sum:.3f} | |err|={model_abs_err:.2e}\n"
+            f"Budget distribue(cout)={model_spent:.3f} ({model_spent_pct:.1f}%) | "
+            f"J_pred={j_pred:.4f} | DeltaJ={delta_j:+.4f}"
         )
         ax_right.axis("off")
 
@@ -249,6 +286,18 @@ def main():
     parser.add_argument("--output", default=OUTPUT_PATH, help="Image de sortie")
     parser.add_argument("--device", default=DEVICE, help="cpu ou cuda")
     parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Graine aleatoire pour le tirage des instances (defaut: aleatoire a chaque execution)",
+    )
+    parser.add_argument(
+        "--n-sims-j",
+        type=int,
+        default=5000,
+        help="Nombre de simulations Monte-Carlo pour estimer J predit par graphe",
+    )
+    parser.add_argument(
         "--budget-tol",
         type=float,
         default=BUDGET_TOL,
@@ -266,7 +315,7 @@ def main():
             f"Instances invalides ignorees: {len(instances) - len(valid_instances)} / {len(instances)}"
         )
 
-    selected_instances = pick_three_families(valid_instances)
+    selected_instances = pick_three_families(valid_instances, seed=args.seed)
 
     device = torch.device(args.device)
     model = GINE_Allocation_Predictor().to(device)
@@ -274,7 +323,7 @@ def main():
     model.load_state_dict(state)
     model.eval()
 
-    plot_comparison(selected_instances, model, args.output, device)
+    plot_comparison(selected_instances, model, args.output, device, n_sims_j=args.n_sims_j)
     budget_stats = check_budget_constraint(valid_instances, model, device, tol=args.budget_tol)
     print(
         "Budget check | "

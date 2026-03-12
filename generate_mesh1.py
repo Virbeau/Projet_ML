@@ -19,20 +19,10 @@ def generate_mesh_instance(m=3, n=4, seed=None):
     mapping = {node: i for i, node in enumerate(G.nodes())}
     G = nx.relabel_nodes(G, mapping)
     
-    # 2. Définition des Terminaux ALÉATOIRES (source et target à des positions différentes)
-    all_nodes = list(G.nodes())
-    # On choisit 2 noeuds au hasard pour source et target
-    selected = random.sample(all_nodes, 2)
-    source_node = selected[0]
-    target_node = selected[1]
-    
-    # Vérification qu'il existe bien un chemin entre source et target
-    # (dans une grille connexe, c'est toujours vrai mais on vérifie par sécurité)
-    if not nx.has_path(G, source_node, target_node):
-        # Si pas de chemin, on prend les coins opposés par défaut
-        reverse_mapping = {v: k for k, v in mapping.items()}
-        source_node = mapping[(0, 0)]
-        target_node = mapping[(m-1, n-1)]
+    # 2. Définition des Terminaux (Coins opposés pour maximiser la difficulté)
+    # Au lieu d'un tirage aléatoire risqué, on fixe la source au début et la cible à la fin
+    source_node = mapping[(0, 0)]
+    target_node = mapping[(m-1, n-1)]
     
     terminals = [source_node, target_node]
     repairable_nodes = [v for v in G.nodes() if v not in terminals]
@@ -50,9 +40,9 @@ def generate_mesh_instance(m=3, n=4, seed=None):
             p_fail = 0.0 
             c_cost = 0.0
         else:
-            # Noeuds réparables : valeurs aléatoires réalistes
-            p_fail = round(random.uniform(0.01, 0.40), 3) # 5% à 40% de chance de panne
-            c_cost = round(random.uniform(1.0, 10.0), 2)   # Coût de réparation entre 1 et 10
+            # CORRECTION : p_fail beaucoup plus réaliste (1% à 15% max)
+            p_fail = round(random.uniform(0.1, 0.15), 3) 
+            c_cost = round(random.uniform(1.0, 10.0), 2)
             
         # Features 5 & 6 : Degrés (Combien de tuyaux arrivent et partent ?)
         in_degree = G.in_degree(v)

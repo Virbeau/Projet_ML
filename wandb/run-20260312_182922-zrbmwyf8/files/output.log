@@ -1,0 +1,12 @@
+[ReliabilityDataset] 27 instances invalides ignorees sur 200
+[ReliabilityDataset] 10 instances invalides ignorees sur 40
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 0 / 30
+Datasets | train_val=173 | benchmark=30
+Epoch 10/20
+Epoch 20/20
+Final metrics | node_mae=0.1809 | budget_viol=0/30 (mean_err=0.00e+00) | terminal_max=0.00e+00
+Modele sauvegarde: checkpoints/gine_b_repartition_v6.pt
+Calcul deltaJ...
+deltaJ: 0/30
+deltaJ | abs_mean=0.005909 | rel_mean=1.13%
+deltaJ done | abs_mean=0.005909 | rel_mean=1.13%

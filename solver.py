@@ -2,6 +2,7 @@
 import numpy as np
 import networkx as nx
 from numba import jit
+from scipy.optimize import minimize
 
 # On enlève matplotlib car on fait tourner ça sur un serveur/VM en tâche de fond
 np.set_printoptions(precision=3, suppress=True)
@@ -135,8 +136,6 @@ def compute_objective_J(G, terminals, criterion, params, pi, H, fail_mask=None):
     return h[start_state]
 
 
-dfrom scipy.optimize import minimize
-
 def solve_instance(G, terminals, criterion, params, H, B, seed=0, iters=25):
     """
     Solveur propre utilisant SLSQP (Scipy) pour garantir le respect strict 
@@ -183,18 +182,4 @@ def solve_instance(G, terminals, criterion, params, H, B, seed=0, iters=25):
         
     # res.fun est le score final, on le met dans une liste pour remplacer 'hist'
     return pi_opt, J_star, pi_by_node, [J_star]
-
-
-# --- Fonction Principale appelée par main.py ---
-def solve_instance(G, terminals, criterion, params, H, B, seed=0, iters=25):
-    # On lance l'optimisation
-    pi_opt, hist = projected_gradient_descent(G, terminals, criterion, params, H=H, B=B, iters=iters)
-    J = compute_objective_J(G, terminals, criterion, params, pi_opt, H=H)
-    
-    pi_by_node = {params["repairable_nodes"][i]: float(pi_opt[i]) for i in range(len(pi_opt))}
-    for t in terminals:
-        pi_by_node[t] = 0.0
-        
-  
-    return pi_opt, J, pi_by_node, hist
 

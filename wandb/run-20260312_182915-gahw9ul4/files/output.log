@@ -1,0 +1,28 @@
+[ReliabilityDataset] 27 instances invalides ignorees sur 200
+[ReliabilityDataset] 10 instances invalides ignorees sur 40
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 0 / 30
+Train/val dataset: 173 graphes
+Benchmark fixe: 30 graphes
+Epoch 1/20, Train Loss: 0.0622, Val Loss: 0.0436, Benchmark Loss: 0.0464
+Epoch 2/20, Train Loss: 0.0494, Val Loss: 0.0414, Benchmark Loss: 0.0408
+Epoch 3/20, Train Loss: 0.0396, Val Loss: 0.0369, Benchmark Loss: 0.0304
+Epoch 4/20, Train Loss: 0.0286, Val Loss: 0.0302, Benchmark Loss: 0.0183
+Epoch 5/20, Train Loss: 0.0213, Val Loss: 0.0220, Benchmark Loss: 0.0133
+Epoch 6/20, Train Loss: 0.0183, Val Loss: 0.0160, Benchmark Loss: 0.0111
+Epoch 7/20, Train Loss: 0.0199, Val Loss: 0.0131, Benchmark Loss: 0.0111
+Epoch 8/20, Train Loss: 0.0149, Val Loss: 0.0132, Benchmark Loss: 0.0116
+Epoch 9/20, Train Loss: 0.0127, Val Loss: 0.0118, Benchmark Loss: 0.0090
+Epoch 10/20, Train Loss: 0.0125, Val Loss: 0.0103, Benchmark Loss: 0.0095
+Epoch 11/20, Train Loss: 0.0109, Val Loss: 0.0092, Benchmark Loss: 0.0104
+Epoch 12/20, Train Loss: 0.0131, Val Loss: 0.0089, Benchmark Loss: 0.0106
+Epoch 13/20, Train Loss: 0.0120, Val Loss: 0.0117, Benchmark Loss: 0.0155
+Epoch 14/20, Train Loss: 0.0106, Val Loss: 0.0086, Benchmark Loss: 0.0099
+Epoch 15/20, Train Loss: 0.0128, Val Loss: 0.0113, Benchmark Loss: 0.0098
+Epoch 16/20, Train Loss: 0.0117, Val Loss: 0.0078, Benchmark Loss: 0.0087
+Epoch 17/20, Train Loss: 0.0104, Val Loss: 0.0073, Benchmark Loss: 0.0081
+Epoch 18/20, Train Loss: 0.0101, Val Loss: 0.0074, Benchmark Loss: 0.0082
+Epoch 19/20, Train Loss: 0.0097, Val Loss: 0.0075, Benchmark Loss: 0.0079
+Epoch 20/20, Train Loss: 0.0097, Val Loss: 0.0079, Benchmark Loss: 0.0073
+=== Évaluation finale sur le benchmark fixe ===
+MSE : 0.0073
+MAE : 0.0680

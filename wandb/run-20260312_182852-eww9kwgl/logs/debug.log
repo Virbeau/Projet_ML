@@ -1,0 +1,24 @@
+2026-03-12 18:28:52,537 INFO    MainThread:1300399 [wandb_setup.py:_flush():81] Current SDK version is 0.25.1
+2026-03-12 18:28:52,538 INFO    MainThread:1300399 [wandb_setup.py:_flush():81] Configure stats pid to 1300399
+2026-03-12 18:28:52,538 INFO    MainThread:1300399 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-03-12 18:28:52,538 INFO    MainThread:1300399 [wandb_init.py:setup_run_log_directory():717] Logging user logs to /users/local/l24virbe/Projet_ML/wandb/run-20260312_182852-eww9kwgl/logs/debug.log
+2026-03-12 18:28:52,539 INFO    MainThread:1300399 [wandb_init.py:setup_run_log_directory():718] Logging internal logs to /users/local/l24virbe/Projet_ML/wandb/run-20260312_182852-eww9kwgl/logs/debug-internal.log
+2026-03-12 18:28:52,539 INFO    MainThread:1300399 [wandb_init.py:init():844] calling init triggers
+2026-03-12 18:28:52,539 INFO    MainThread:1300399 [wandb_init.py:init():849] wandb.init called with sweep_config: {}
+config: {'batch_size': 32, 'lr': 0.001, 'epochs': 10, 'wandb_group': 'Gine_J', 'train_json': 'datasetV6.json', 'train_jstar_min': None, 'train_jstar_max': None, 'benchmark_json': 'benchmark_v6_40.json', 'benchmark_jstar_min': 0.01, 'benchmark_jstar_max': 0.99, 'split_seed': 42, '_wandb': {}}
+2026-03-12 18:28:52,539 INFO    MainThread:1300399 [wandb_init.py:init():892] starting backend
+2026-03-12 18:28:52,786 INFO    MainThread:1300399 [wandb_init.py:init():895] sending inform_init request
+2026-03-12 18:28:52,797 INFO    MainThread:1300399 [wandb_init.py:init():903] backend started and connected
+2026-03-12 18:28:52,802 INFO    MainThread:1300399 [wandb_init.py:init():973] updated telemetry
+2026-03-12 18:28:52,816 INFO    MainThread:1300399 [wandb_init.py:init():997] communicating run to backend with 90.0 second timeout
+2026-03-12 18:28:53,592 INFO    MainThread:1300399 [wandb_init.py:init():1042] starting run threads in backend
+2026-03-12 18:28:53,714 INFO    MainThread:1300399 [wandb_run.py:_console_start():2524] atexit reg
+2026-03-12 18:28:53,714 INFO    MainThread:1300399 [wandb_run.py:_redirect():2373] redirect: wrap_raw
+2026-03-12 18:28:53,714 INFO    MainThread:1300399 [wandb_run.py:_redirect():2442] Wrapping output streams.
+2026-03-12 18:28:53,714 INFO    MainThread:1300399 [wandb_run.py:_redirect():2465] Redirects installed.
+2026-03-12 18:28:53,717 INFO    MainThread:1300399 [wandb_init.py:init():1082] run started, returning control to user process
+2026-03-12 18:28:54,486 INFO    MainThread:1300399 [wandb_run.py:_finish():2291] finishing run louis-virbel-imt-atlantique/Reliability_GNN/eww9kwgl
+2026-03-12 18:28:54,486 INFO    MainThread:1300399 [wandb_run.py:_atexit_cleanup():2490] got exitcode: 0
+2026-03-12 18:28:54,487 INFO    MainThread:1300399 [wandb_run.py:_restore():2472] restore
+2026-03-12 18:28:54,487 INFO    MainThread:1300399 [wandb_run.py:_restore():2478] restore done
+2026-03-12 18:28:55,472 INFO    MainThread:1300399 [wandb_run.py:_footer_sync_info():3868] logging synced files
