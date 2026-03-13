@@ -19,6 +19,7 @@ def fast_is_connected(G_base, source, target, up_nodes):
 def simulate_monte_carlo(instance, n_sims=10000):
     """
     Simule n_sims trajectoires markoviennes vectorisées pour un graphe donné.
+    Calcule la Disponibilité (Availability) : Le pourcentage moyen de temps passé en panne.
     """
     H = int(instance["H"])
     edges = instance["graph"]["edges"]
@@ -30,10 +31,10 @@ def simulate_monte_carlo(instance, n_sims=10000):
     if not rep_nodes:
         rep_nodes = [n for n in nodes if n not in terminals]
         
-    # LA CORRECTION EST ICI : Mapping entre ID du noeud et son index dans la liste x/y
+    # Mapping entre ID du noeud et son index dans la liste x/y
     node_to_idx = {n: i for i, n in enumerate(nodes)}
     
-    # On récupère les bonnes probas pour les bons noeuds !
+    # On récupère les bonnes probas pour les bons noeuds
     p_fail = np.array([instance["x"][node_to_idx[n]][0] for n in rep_nodes])
     pi_star = np.array([instance["y"][node_to_idx[n]] for n in rep_nodes])
     
@@ -41,28 +42,35 @@ def simulate_monte_carlo(instance, n_sims=10000):
     G.add_edges_from(edges)
     
     states = np.ones((n_sims, len(rep_nodes)), dtype=bool)
-    failed_sims = np.zeros(n_sims, dtype=bool)
+    
+    # NOUVEAU : On utilise un compteur de temps de panne au lieu d'un booléen définitif
+    downtime_counts = np.zeros(n_sims, dtype=float)
     
     for step in range(H):
         rands = np.random.rand(n_sims, len(rep_nodes))
         to_down = states & (rands < p_fail)
         to_up = (~states) & (rands < pi_star)
+        
+        # Mise à jour des états
         states = (states & ~to_down) | to_up
         
-        active_indices = np.where(~failed_sims)[0]
-        for idx in active_indices:
+        # NOUVEAU : On évalue TOUTES les simulations à chaque pas de temps
+        for idx in range(n_sims):
             up_rep_nodes = [rep_nodes[i] for i, is_up in enumerate(states[idx]) if is_up]
+            
+            # Si le réseau est déconnecté à l'instant t, on ajoute 1 au compteur de pannes
             if not fast_is_connected(G, source, target, up_rep_nodes):
-                failed_sims[idx] = True
+                downtime_counts[idx] += 1
                 
-        if failed_sims.all():
-            break
+        # /!\ On a retiré le 'break' ici. Si le réseau tombe en panne, 
+        # il peut tout à fait être réparé au pas de temps t+1 grâce au budget !
 
-    return failed_sims.sum() / n_sims
+    # Le score final est la moyenne des temps d'indisponibilité, ramenée à l'horizon H (pourcentage)
+    return np.mean(downtime_counts) / H
 
 if __name__ == "__main__":
     print("Chargement du dataset...")
-    # Dataset V2 (1000 instances) par défaut
+    # Remplace par le nom de ton fichier de test
     dataset_file = "dataset_hybrid_mesh_sp_er_v2_1000.json"
     
     with open(dataset_file, "r") as f: 

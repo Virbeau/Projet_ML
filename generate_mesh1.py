@@ -37,11 +37,11 @@ def generate_mesh_instance(m=3, n=4, seed=None):
         # Features 1 & 2 : p_fail et c_cost
         if v in terminals:
             # Les terminaux sont parfaits (pas de panne, pas de coût)
-            p_fail = 0.0 
+            p_fail = 0.0
             c_cost = 0.0
         else:
-            # CORRECTION : p_fail beaucoup plus réaliste (1% à 15% max)
-            p_fail = round(random.uniform(0.1, 0.15), 3) 
+            # Risque plus élevé et plus varié pour augmenter la dispersion de J*.
+            p_fail = round(random.uniform(0.16, 0.32), 3)
             c_cost = round(random.uniform(1.0, 10.0), 2)
             
         # Features 5 & 6 : Degrés (Combien de tuyaux arrivent et partent ?)

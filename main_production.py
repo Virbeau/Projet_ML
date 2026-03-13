@@ -22,30 +22,51 @@ from generate_er import generate_er_instance
 from solver import solve_instance 
 
 
-def get_budget_alpha(graph_type):
+def get_budget_alpha(graph_type, mean_p_fail=None):
     """
-    Tire le multiplicateur alpha avec une Loi Normale adaptée à la topologie.
-    On centre la gaussienne autour du coût du chemin critique pour cibler J* ~ 0.5.
+    Tire le ratio budget alpha adapté à la topologie.
+    Définition retenue: B = alpha * C_total (coût total des noeuds réparables).
     """
     if graph_type == "mesh":
-        # Les mesh sont redondants. On est plus sévère sur le budget.
-        mu, sigma = 0.8, 0.2
+        mu, sigma = 0.58, 0.16
+        ref_p = 0.17
     elif graph_type == "sp":
-        # Les SP ont des goulots d'étranglement, ils ont besoin d'un peu plus.
-        mu, sigma = 1.1, 0.3
+        mu, sigma = 0.30, 0.10
+        ref_p = 0.12
     else:
-        # Les ER sont chaotiques et souvent fragiles.
-        mu, sigma = 1.2, 0.3
-        
-    alpha = np.random.normal(loc=mu, scale=sigma)
-    # On évite les extrêmes absurdes
-    return float(np.clip(alpha, 0.2, 2.0))
+        mu, sigma = 0.34, 0.11
+        ref_p = 0.13
+
+    # Ajustement léger par niveau de risque observé sur l'instance.
+    risk_boost = 1.0
+    if mean_p_fail is not None:
+        risk_boost += 0.9 * (float(mean_p_fail) - ref_p)
+        risk_boost = float(np.clip(risk_boost, 0.85, 1.15))
+
+    # Mélange de lois pour élargir la dispersion du budget.
+    if graph_type == "mesh":
+        u_low, u_high = 0.20, 0.85
+        a_low, a_high = 0.12, 0.90
+    elif graph_type == "sp":
+        u_low, u_high = 0.08, 0.55
+        a_low, a_high = 0.06, 0.60
+    else:
+        u_low, u_high = 0.10, 0.62
+        a_low, a_high = 0.07, 0.68
+
+    if random.random() < 0.70:
+        alpha = np.random.normal(loc=mu, scale=sigma)
+    else:
+        alpha = np.random.uniform(u_low, u_high)
+
+    alpha *= risk_boost
+    return float(np.clip(alpha, a_low, a_high))
 
 
 def process_single_instance(args):
     """
-    Fonction worker avec Filtre de Jouabilité.
-    Boucle jusqu'à trouver un graphe "intéressant" (où 0.5 est atteignable).
+    Fonction worker sans filtre de jouabilité.
+    Boucle uniquement pour gérer les rares cas pathologiques (pas de chemin valide).
     """
     base_seed, graph_type, params, H, iters = args
     attempt = 0
@@ -92,15 +113,11 @@ def process_single_instance(args):
         if C_total <= 0: C_total = 1.0
 
         # ==========================================================
-        # 2. FILTRE DE JOUABILITÉ (Le réseau est-il intéressant ?)
+        # 2. Diagnostic de bornes (sans rejet)
         # ==========================================================
         _, J_min, _, _ = solve_instance(G, terminals, "terminal_connectivity", params_solver, H, C_total, iters=iters)
-        if J_min > 0.60:
-            continue
             
         _, J_max, _, _ = solve_instance(G, terminals, "terminal_connectivity", params_solver, H, 0.0, iters=iters)
-        if J_max < 0.40:
-            continue
 
         # ==========================================================
         # 3. TIRAGE DU BUDGET (Gaussienne Ajustée)
@@ -119,8 +136,9 @@ def process_single_instance(args):
 
         if C_min_path <= 0.01: C_min_path = 0.5
         
-        alpha = get_budget_alpha(graph_type)
-        B = round(alpha * C_min_path, 2)
+        mean_p_fail = float(np.mean(p_fail_repairable)) if len(p_fail_repairable) > 0 else None
+        alpha = get_budget_alpha(graph_type, mean_p_fail=mean_p_fail)
+        B = round(max(0.0, alpha * C_total), 2)
         
         # 4. Résolution Finale avec le vrai budget B
         pi_star, J_star, _, _ = solve_instance(
@@ -134,8 +152,9 @@ def process_single_instance(args):
         # Fallback MAX_ATTEMPTS atteint : on force avec le dernier graphe généré
         C_min_path = float(np.sum(c_cost_repairable)) * 0.5 if c_cost_repairable is not None else 1.0
         if C_min_path <= 0: C_min_path = 1.0
-        alpha = get_budget_alpha(graph_type)
-        B = round(alpha * C_min_path, 2)
+        mean_p_fail = float(np.mean(p_fail_repairable)) if p_fail_repairable is not None and len(p_fail_repairable) > 0 else None
+        alpha = get_budget_alpha(graph_type, mean_p_fail=mean_p_fail)
+        B = round(max(0.0, alpha * C_total), 2)
         pi_star, J_star, _, _ = solve_instance(
             G=G, terminals=terminals, criterion="terminal_connectivity",
             params=params_solver, H=H, B=B, iters=iters
@@ -203,13 +222,13 @@ def main():
     parser.add_argument("--out-path", type=str, default="dataset_hybrid_filtered_v3.json", help="Fichier JSON de sortie")
     parser.add_argument("--log-file", type=str, default="generation_progress.log", help="Log de progression")
     parser.add_argument("--workers", type=int, default=None, help="Nombre de workers")
+    parser.add_argument("--H", type=int, default=25, help="Horizon temporel (par défaut 25)")
     args = parser.parse_args()
 
     n_instances = args.n_instances
     
-    # HORIZONS RÉDUITS pour éviter la mort inévitable du réseau
-    H_default_min, H_default_max = 5, 12   # SP / ER
-    H_mesh_min, H_mesh_max = 5, 12        # Mesh
+  
+    
     
     mesh_configs = [
         ("mesh", (2, 2), 20), ("mesh", (2, 3), 25), ("mesh", (3, 2), 25), 
@@ -243,18 +262,18 @@ def main():
     
     for i in range(n_mesh):
         graph_type, params, iters = random.choices(mesh_configs, weights=mesh_weights)[0]
-        H = random.randint(H_mesh_min, H_mesh_max)
+        H = args.H
         tasks.append((i, graph_type, params, H, iters))
     
     for i in range(n_mesh, n_mesh + n_sp):
         graph_type, params, iters = random.choices(sp_configs, weights=sp_weights)[0]
-        H = random.randint(H_default_min, H_default_max)
+        H = args.H
         tasks.append((i, graph_type, params, H, iters))
     
     for i in range(n_mesh + n_sp, n_instances):
         graph_type, params, iters = random.choices(er_configs, weights=er_weights)[0]
-        p = round(random.uniform(0.30, 0.45), 2)
-        H = random.randint(H_default_min, H_default_max)
+        p = round(random.uniform(0.27, 0.40), 2)
+        H = args.H
         tasks.append((i, graph_type, (params[0], p), H, iters))
     
     random.shuffle(tasks)
@@ -278,8 +297,8 @@ def main():
             "metadata": {
                 "generated_at": datetime.now().isoformat(),
                 "n_instances": n_instances,
-                "budget_rule": "Alpha Normal Distribution centered on C_min_path (Mesh:0.8, SP:1.1, ER:1.2)",
-                "filter_rule": "Rejected if J_min > 0.60 or J_max < 0.40"
+                "budget_rule": "Risk-aware mixed alpha (Normal+Uniform) on C_min_path with clipping [0.05, 2.00]",
+                "filter_rule": "None (no rejection filter)"
             },
             "instances": dataset
         }, f, indent=2)
@@ -293,7 +312,7 @@ def main():
     print("✅ GÉNÉRATION COMPLÈTE")
     print(f"⏱️  Temps total : {elapsed_time:.1f}s")
     print(f"\n📈 Statistiques du nouveau Dataset :")
-    print(f"   • Rejets moyens par instance : {np.mean(attempts)-1:.1f}")
+    print(f"   • Retentatives moyennes (cas pathologiques) : {np.mean(attempts)-1:.1f}")
     print(f"   • α appliqué (Budget/C_min_path) : {min(alpha_values):.2f} à {max(alpha_values):.2f}")
     print(f"   • J* (Probabilité de panne) : {min(j_values):.4f} à {max(j_values):.4f}")
     print(f"   • Moyenne de J* : {np.mean(j_values):.4f} (Devrait être centrée !)")

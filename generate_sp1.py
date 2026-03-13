@@ -70,7 +70,8 @@ def generate_sp_instance(num_repairable=10, seed=None):
         if v in terminals:
             p_fail, c_cost = 0.0, 0.0
         else:
-            p_fail = round(random.uniform(0.05, 0.10), 3)
+            # Risque moyen rehaussé + plage plus large pour plus de diversité.
+            p_fail = round(random.uniform(0.10, 0.22), 3)
             c_cost = round(random.uniform(1.0, 10.0), 2)
             
         in_degree = G.in_degree(v)

@@ -71,7 +71,7 @@ def get_fail_mask(G, terminals, criterion, params):
     return fail_mask
 
 
-# --- Moteur Markovien (Le coeur du prof, légèrement optimisé) ---
+# --- Moteur Markovien ---
 def build_transition_matrix(p_fail, r_repair):
     """
     Version 100% vectorisée NumPy. 
@@ -107,33 +107,47 @@ def build_transition_matrix(p_fail, r_repair):
     return P
 
 
-def hitting_probability(P, fail_mask, H):
+def compute_expected_downtime(P, fail_mask, H):
+    """
+    NOUVELLE LOGIQUE : DISPONIBILITÉ (Availability)
+    Calcule l'espérance du temps passé en état de panne (Downtime) sur l'horizon H.
+    Renvoie une valeur J* normalisée entre 0.0 (toujours connecté) et 1.0 (toujours en panne).
+    """
     S = P.shape[0]
-    h = fail_mask.astype(float).copy() 
-    traj = [h.copy()]
+    
+    # pi_t est le vecteur de distribution des probabilités des états.
+    # Au départ (t=0), on suppose que tous les composants fonctionnent.
+    # L'état où tout marche est le dernier état : S-1 (car tous les bits sont à 1)
+    pi_t = np.zeros(S)
+    pi_t[-1] = 1.0 
+    
+    total_downtime = 0.0
+    
     for _ in range(H):
-        h_next = fail_mask.astype(float) + (~fail_mask).astype(float) * (P @ h)
-        h_next = np.clip(h_next, 0.0, 1.0)
-        h = h_next
-        traj.append(h.copy())
-    return h, traj
+        # On avance d'un pas de temps (Distribution de Markov)
+        pi_t = pi_t @ P
+        
+        # On additionne la probabilité d'être dans N'IMPORTE QUEL état défaillant à cet instant
+        total_downtime += np.sum(pi_t[fail_mask])
+        
+    # On divise par H pour avoir un pourcentage moyen de temps de panne
+    return total_downtime / H
 
 
 def compute_objective_J(G, terminals, criterion, params, pi, H, fail_mask=None):
     """
-    Calcule le score J (La probabilité que le réseau tombe en panne avant la fin du temps H).
-    On veut MINIMISER cette probabilité.
+    Calcule le score J* (Pourcentage de temps passé en panne sur l'horizon H).
+    On veut MINIMISER cette valeur.
     """
     if fail_mask is None:
         fail_mask = get_fail_mask(G, terminals, criterion, params)
         
     P = build_transition_matrix(params["p_fail"], pi)
-    h, _ = hitting_probability(P, fail_mask, H)
     
-    m = len(pi)
-    start_state = (1 << m) - 1 # Au temps t=0, tous les noeuds marchent (111...1)
+    # On remplace l'ancien appel par la nouvelle logique
+    J_score = compute_expected_downtime(P, fail_mask, H)
     
-    return h[start_state]
+    return J_score
 
 
 def solve_instance(G, terminals, criterion, params, H, B, seed=0, iters=25):
@@ -159,7 +173,6 @@ def solve_instance(G, terminals, criterion, params, H, B, seed=0, iters=25):
     bounds = [(0.0, 1.0) for _ in range(m)]
     
     # 5. Point de départ : On donne un peu de budget partout pour "allumer" les gradients
-    # plutôt que de commencer à 0 absolu.
     pi_0 = np.full(m, min(1.0, B / (np.sum(c_cost) + 1e-9))) 
     
     # 6. Lancement de l'optimiseur SLSQP
@@ -175,11 +188,10 @@ def solve_instance(G, terminals, criterion, params, H, B, seed=0, iters=25):
     pi_opt = res.x
     J_star = res.fun
     
-    # 7. Formatage de la sortie (identique à ton ancien code)
+    # 7. Formatage de la sortie
     pi_by_node = {params["repairable_nodes"][i]: float(pi_opt[i]) for i in range(len(pi_opt))}
     for t in terminals:
         pi_by_node[t] = 0.0
         
     # res.fun est le score final, on le met dans une liste pour remplacer 'hist'
     return pi_opt, J_star, pi_by_node, [J_star]
-
