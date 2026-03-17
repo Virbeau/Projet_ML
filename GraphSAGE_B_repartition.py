@@ -5,12 +5,13 @@ import wandb
 import torch.nn.functional as F
 from torch.nn import Sequential, Linear, ReLU, Sigmoid
 from torch_geometric.data import Data, Dataset
-from torch_geometric.nn import GINEConv, global_add_pool
+# --- Modification : Import de GraphSAGE à la place de GINEConv ---
+from torch_geometric.nn import GraphSAGE, global_add_pool
 from torch_geometric.loader import DataLoader
 import numpy as np
 
 # --- Configuration ---
-TRAIN_JSON = "datasetV7_mesh.json"
+TRAIN_JSON = "fusionV7.json"
 TRAIN_CLEAN_INVALID_EDGES = True
 TRAIN_JSTAR_MIN = None
 TRAIN_JSTAR_MAX = None
@@ -25,16 +26,18 @@ SPLIT_SEED = 42
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 NUM_EPOCHS = 120
-WANDB_RUN_NAME = "GINE_B_meshV7fusion_120e"
-WANDB_GROUP = "Gine_B_V7"
+
+# --- Noms pour W&B ---
+WANDB_RUN_NAME = "GraphSAGE_B_V7fusion_120e"
+WANDB_GROUP = "GraphSAGE_B_V7"
 SAVE_MODEL = True
-MODEL_SAVE_PATH = "checkpoints/gine_b_meshV7fusion.pt"
+MODEL_SAVE_PATH = "checkpoints/graphsage_b_V7fusion.pt"
 COMPUTE_DELTAJ = True
 DELTAJ_N_SIMS = 1000
 DELTAJ_MAX_INSTANCES = 50
 BUDGET_TOL = 1e-4
 
-# --- Fonctions Utilitaires ---
+# --- Fonctions Utilitaires (Inchangées) ---
 def is_valid_instance(inst):
     x = inst.get("x", [])
     num_nodes = len(x)
@@ -45,7 +48,6 @@ def is_valid_instance(inst):
     nodes = graph_info.get("nodes")
     edges = graph_info.get("edges", [])
 
-    # Accepte des IDs de noeuds non contigus tant que les aretes restent coherentes.
     if isinstance(nodes, list) and len(nodes) == num_nodes:
         node_set = set(nodes)
         for src, dst in edges:
@@ -57,7 +59,6 @@ def is_valid_instance(inst):
                 return False
     return True
 
-
 def split_valid_instances(instances):
     valid_instances = []
     invalid_count = 0
@@ -67,7 +68,6 @@ def split_valid_instances(instances):
         else:
             invalid_count += 1
     return valid_instances, invalid_count
-
 
 def filter_instances_by_jstar(instances, jstar_min=None, jstar_max=None):
     if jstar_min is None and jstar_max is None:
@@ -100,13 +100,7 @@ def filter_instances_by_jstar(instances, jstar_min=None, jstar_max=None):
 
 # --- Dataset ---
 class ReliabilityDataset(Dataset):
-    def __init__(
-        self,
-        json_file,
-        clean_invalid_edges=True,
-        jstar_min=None,
-        jstar_max=None,
-    ):
+    def __init__(self, json_file, clean_invalid_edges=True, jstar_min=None, jstar_max=None):
         super().__init__()
         with open(json_file, "r") as f:
             raw_data = json.load(f)
@@ -115,26 +109,16 @@ class ReliabilityDataset(Dataset):
         if clean_invalid_edges:
             self.instances, invalid_count = split_valid_instances(instances)
             if invalid_count > 0:
-                print(
-                    f"[ReliabilityDataset] {invalid_count} instances invalides ignorees "
-                    f"sur {len(instances)}"
-                )
+                print(f"[ReliabilityDataset] {invalid_count} instances invalides ignorees sur {len(instances)}")
         else:
             self.instances = instances
 
         if jstar_min is not None or jstar_max is not None:
             original_len = len(self.instances)
             self.instances, removed = filter_instances_by_jstar(
-                self.instances,
-                jstar_min=jstar_min,
-                jstar_max=jstar_max,
+                self.instances, jstar_min=jstar_min, jstar_max=jstar_max,
             )
-            print(
-                f"[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes "
-                f"[{jstar_min if jstar_min is not None else '-inf'}, "
-                f"{jstar_max if jstar_max is not None else '+inf'}] | "
-                f"supprimees: {removed} / {original_len}"
-            )
+            print(f"[ReliabilityDataset] Filtrage direct sur 'J_star' | supprimees: {removed} / {original_len}")
 
     def __len__(self):
         return len(self.instances)
@@ -143,6 +127,7 @@ class ReliabilityDataset(Dataset):
         inst = self.instances[idx]
 
         x = torch.tensor(inst["x"], dtype=torch.float32)
+        #Normalisation 
         x[:, 1] = x[:, 1] / 10.0
         x[:, 4] = x[:, 4] / 15.0
         x[:, 5] = x[:, 5] / 15.0
@@ -171,7 +156,7 @@ class ReliabilityDataset(Dataset):
         data = Data(
             x=x,
             edge_index=edge_index,
-            edge_attr=edge_attr,
+            edge_attr=edge_attr, # GraphSAGE l'ignorera par défaut, mais Data() le garde
             y=y_graph,
             y_node=y_node,
         )
@@ -186,57 +171,46 @@ class ReliabilityDataset(Dataset):
         data.B = torch.tensor([inst["B"]], dtype=torch.float32)
         data.terminal_mask = terminal_mask
 
-        # Extraction du coût réel (c_cost) depuis x[:,1] AVANT normalisation
-        # x[:,1] a déjà été divisé par 10 ci-dessus, on récupère la valeur brute
         c_list = inst.get("c_cost", inst.get("params", {}).get("c_cost", None))
         if c_list is not None:
             data.c_cost = torch.tensor(c_list, dtype=torch.float32)
         else:
-            # Extraire directement depuis le JSON (valeur brute, avant normalisation)
             raw_x = inst["x"]
             data.c_cost = torch.tensor([row[1] for row in raw_x], dtype=torch.float32)
 
         return data
 
 
-# --- Modèle ---
-class GINE_Allocation_Predictor(torch.nn.Module):
-    def __init__(self, num_node_features=9, hidden_dim=64, edge_dim=1):
-        super(GINE_Allocation_Predictor, self).__init__()
+# =========================================================
+# NOUVEAU MODÈLE GRAPHSAGE POUR LA TÂCHE B (ALLOCATION)
+# =========================================================
+class GraphSAGE_Allocation_Predictor(torch.nn.Module):
+    def __init__(self, num_node_features=9, hidden_dim=64, num_layers=2):
+        super(GraphSAGE_Allocation_Predictor, self).__init__()
         
-        self.conv1 = GINEConv(
-            nn=Sequential(
-                Linear(num_node_features, hidden_dim),
-                ReLU(),
-                Linear(hidden_dim, hidden_dim),
-                ReLU(),
-            ),
-            edge_dim=edge_dim,
-        )
-        self.conv2 = GINEConv(
-            nn=Sequential(
-                Linear(hidden_dim, hidden_dim),
-                ReLU(),
-                Linear(hidden_dim, hidden_dim),
-                ReLU(),
-            ),
-            edge_dim=edge_dim,
+        # 1. Le Corps : GraphSAGE Compiled (Remplace GINEConv1 et GINEConv2)
+        self.gnn = GraphSAGE(
+            in_channels=num_node_features,
+            hidden_channels=hidden_dim,
+            num_layers=num_layers,
+            out_channels=hidden_dim,
+            dropout=0.0,
+            act='relu'
         )
         
-        # Tête de Régression avec Sigmoid pour forcer des probas [0, 1]
+        # 2. La Tête de Régression : Prédit l'importance de CHAQUE nœud
         self.mlp_readout = Sequential(
             Linear(hidden_dim, hidden_dim // 2),
             ReLU(),
             Linear(hidden_dim // 2, 1),
-            Sigmoid() 
+            Sigmoid() # Force des probas brutes entre 0 et 1
         )
 
     def forward(self, x, edge_index, edge_attr, batch, B_total, terminal_mask=None, c_cost=None):
-        # 1. Message Passing
-        x = self.conv1(x, edge_index, edge_attr)
-        x = self.conv2(x, edge_index, edge_attr)
+        # 1. Message Passing via GraphSAGE (pas besoin de edge_attr)
+        x = self.gnn(x, edge_index)
         
-        # 2. Prédiction des probabilités brutes (entre 0 et 1)
+        # 2. Prédiction des probabilités brutes
         pi_raw = self.mlp_readout(x).squeeze(-1)
         
         # 3. Contrainte métier : aucun budget sur les terminaux
@@ -247,7 +221,7 @@ class GINE_Allocation_Predictor(torch.nn.Module):
         if c_cost is None:
             c_cost = torch.ones_like(pi_raw)
             
-        # 4. Calcul de la dépense totale : Somme(pi_i * c_i)
+        # 4. Calcul de la dépense totale : Somme(pi_i * c_i) par graphe
         node_expenses = pi_raw * c_cost
         total_expenses = global_add_pool(node_expenses.view(-1, 1), batch).view(-1)
         
@@ -262,7 +236,7 @@ class GINE_Allocation_Predictor(torch.nn.Module):
         return final_alloc
 
 
-# --- Préparation Inférence ---
+# --- Préparation Inférence (Inchangé) ---
 def _prepare_model_inputs_from_instance(inst):
     x = torch.tensor(inst["x"], dtype=torch.float32)
     x[:, 1] = x[:, 1] / 10.0
@@ -298,7 +272,6 @@ def _prepare_model_inputs_from_instance(inst):
     if c_list is not None:
         c_cost = torch.tensor(c_list, dtype=torch.float32)
     else:
-        # Extraire depuis le JSON brut (avant normalisation)
         c_cost = torch.tensor([row[1] for row in inst["x"]], dtype=torch.float32)
 
     return x, edge_index, edge_attr, batch, B_total, terminal_mask, c_cost
@@ -399,7 +372,8 @@ if __name__ == "__main__":
         }
     )
 
-    model = GINE_Allocation_Predictor()
+    # Initialisation du modèle modifié
+    model = GraphSAGE_Allocation_Predictor()
 
     train_val_dataset = ReliabilityDataset(
         json_file=TRAIN_JSON,
@@ -489,11 +463,9 @@ if __name__ == "__main__":
                     batch.c_cost,
                 )
                 
-                # Le vrai calcul de l'argent dépensé (pi * coût)
                 pred_sum = global_add_pool((pred * batch.c_cost).view(-1, 1), batch.batch).view(-1)
                 b_true = batch.B.view(-1)
                 
-                # On compte l'erreur seulement si on DEPASSE le budget
                 excess = F.relu(pred_sum - b_true)
 
                 violations += int((excess > tol).sum().item())

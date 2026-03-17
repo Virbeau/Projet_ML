@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/users/local/l24virbe/Projet_ML/GINE_B_repartition.py", line 404, in <module>
+    train_val_dataset = ReliabilityDataset(
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/GINE_B_repartition.py", line 111, in __init__
+    with open(json_file, "r") as f:
+         ^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'meshV7.json'

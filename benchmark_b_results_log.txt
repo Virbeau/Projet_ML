@@ -1,0 +1,35 @@
+nohup: les entrées sont ignorées
+
+Benchmark GINE_B sans solveur | n=40 | nodes=[30,60] | H=25 | mc_sims=3000
+Checkpoint: checkpoints/gine_b_repartition_v7.pt | Device: cpu
+
+[  4/40] J_uniform=0.9229 | J_risk=0.9141 | J_greedy=0.9749 | J_gine=0.8911 | GINE_B wins=75.0%
+[  8/40] J_uniform=0.9219 | J_risk=0.9093 | J_greedy=0.9732 | J_gine=0.8825 | GINE_B wins=87.5%
+[ 12/40] J_uniform=0.9380 | J_risk=0.9268 | J_greedy=0.9765 | J_gine=0.9076 | GINE_B wins=75.0%
+[ 16/40] J_uniform=0.9407 | J_risk=0.9296 | J_greedy=0.9775 | J_gine=0.9151 | GINE_B wins=68.8%
+[ 20/40] J_uniform=0.9426 | J_risk=0.9340 | J_greedy=0.9785 | J_gine=0.9185 | GINE_B wins=70.0%
+[ 24/40] J_uniform=0.9466 | J_risk=0.9371 | J_greedy=0.9798 | J_gine=0.9241 | GINE_B wins=70.8%
+[ 28/40] J_uniform=0.9383 | J_risk=0.9276 | J_greedy=0.9680 | J_gine=0.9086 | GINE_B wins=71.4%
+[ 32/40] J_uniform=0.9361 | J_risk=0.9263 | J_greedy=0.9666 | J_gine=0.9058 | GINE_B wins=71.9%
+[ 36/40] J_uniform=0.9395 | J_risk=0.9310 | J_greedy=0.9683 | J_gine=0.9114 | GINE_B wins=72.2%
+[ 40/40] J_uniform=0.9306 | J_risk=0.9237 | J_greedy=0.9598 | J_gine=0.8992 | GINE_B wins=70.0%
+
+========================================================================
+RÉSULTATS BENCHMARK GINE_B vs POLITIQUES NAÏVES
+========================================================================
+Méthode                    Mean J   Median J    Std J    Min J    Max J
+------------------------------------------------------------------------
+Naïf 1 — Uniforme         0.93062    0.96417  0.08855  0.56535  0.99771
+Naïf 2 — Risk-prop        0.92368    0.95997  0.08590  0.63703  0.99581
+Naïf 3 — Greedy           0.95981    0.98675  0.06556  0.69404  0.99733
+GINE_B ◀                  0.89919    0.94157  0.12417  0.41423  0.99781
+========================================================================
+  GINE_B bat Naïf Uniforme   : 90.0% des instances  (gain moyen J: +0.03143)
+  GINE_B bat Naïf Risk-prop  : 75.0% des instances  (gain moyen J: +0.02448)
+  GINE_B bat Naïf Greedy     : 87.5% des instances  (gain moyen J: +0.06062)
+  GINE_B bat TOUTES les naïves: 70.0% des instances
+------------------------------------------------------------------------
+  Temps inference GINE_B: 80.493 ms | Temps MC (1 pol.): 4439.6 ms
+
+Résultats complets: benchmark_b_no_solver_complex_results.json
+========================================================================

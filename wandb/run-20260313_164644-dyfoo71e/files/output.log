@@ -1,0 +1,19 @@
+[ReliabilityDataset] 1225 instances invalides ignorees sur 9000
+[ReliabilityDataset] 140 instances invalides ignorees sur 900
+[ReliabilityDataset] Filtrage direct sur 'J_star' avec bornes [0.01, 0.99] | supprimees: 87 / 760
+Datasets | train_val=7775 | benchmark=673
+Epoch 10/120
+Epoch 20/120
+Epoch 30/120
+Epoch 40/120
+Traceback (most recent call last):
+  File "/users/local/l24virbe/Projet_ML/GINE_B_repartition.py", line 520, in <module>
+    pred = model(
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/_tensor.py", line 630, in backward
+    torch.autograd.backward(
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/autograd/__init__.py", line 364, in backward
+    _engine_run_backward(
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/autograd/graph.py", line 865, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

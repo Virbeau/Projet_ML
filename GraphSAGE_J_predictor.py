@@ -7,9 +7,9 @@ import wandb
 import torch.nn.functional as F
 from torch.nn import Sequential, Linear, ReLU, BatchNorm1d, Sigmoid
 from torch_geometric.data import Data, Dataset
-from torch_geometric.nn import GINEConv, global_mean_pool
+from torch_geometric.nn import GraphSAGE, global_mean_pool # <-- IMPORT MODIFIÉ
 
-TRAIN_JSON = "datasetV7_sp.json"
+TRAIN_JSON = "fusionV7.json"
 TRAIN_CLEAN_INVALID_EDGES = True
 TRAIN_JSTAR_MIN = None
 TRAIN_JSTAR_MAX = None
@@ -24,10 +24,12 @@ SPLIT_SEED = 42
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 NUM_EPOCHS = 120
-WANDB_RUN_NAME = "GINE_J_spV7fusion_120e"
-WANDB_GROUP = "Gine_J_V7"
-SAVE_LAST_MODEL_PATH = False
-SAVE_BEST_MODEL_PATH = "checkpoints/gine_j_spV7fusion.pt"
+
+# --- NOMS MIS A JOUR POUR WANDB ET LA SAUVEGARDE ---
+WANDB_RUN_NAME = "GraphSAGE_J_V7fusion_120e"
+WANDB_GROUP = "GraphSAGE_J_V7"
+SAVE_LAST_MODEL_PATH = True
+SAVE_BEST_MODEL_PATH = "checkpoints/graphsage_j_V7fusion.pt"
 
 
 def is_valid_instance(inst):
@@ -40,8 +42,6 @@ def is_valid_instance(inst):
     nodes = graph_info.get("nodes")
     edges = graph_info.get("edges", [])
 
-    # Si les IDs de noeuds sont fournis, on valide les aretes sur cet ensemble,
-    # pas sur [0..num_nodes-1], afin d'accepter les IDs non contigus.
     if isinstance(nodes, list) and len(nodes) == num_nodes:
         node_set = set(nodes)
         for src, dst in edges:
@@ -179,38 +179,30 @@ class ReliabilityDataset(Dataset):
         data.B = torch.tensor([inst["B"]], dtype=torch.float32)
         return data
 
-class GINE_JStar_Predictor(torch.nn.Module):
-    def __init__(self, num_node_features=9, hidden_dim=64, edge_dim=1):
-        super(GINE_JStar_Predictor, self).__init__()
+
+# =========================================================
+# NOUVELLE CLASSE DU MODÈLE AVEC GRAPHSAGE
+# =========================================================
+class GraphSAGE_JStar_Predictor(torch.nn.Module):
+    def __init__(self, num_node_features=9, hidden_dim=64, num_layers=2):
+        super(GraphSAGE_JStar_Predictor, self).__init__()
         
         # ---------------------------------------------------------
-        # 1ère COUCHE GINE
-        # Chaque couche GINE nécessite un petit réseau de neurones (MLP)
-        # pour traiter les messages reçus par les voisins.
+        # LE CORPS DU MODÈLE : GraphSAGE Compiled de PyG
+        # Il gère automatiquement le nombre de couches et le dropout
         # ---------------------------------------------------------
-        nn1 = Sequential(
-            Linear(num_node_features, hidden_dim),
-            BatchNorm1d(hidden_dim),
-            ReLU(),
-            Linear(hidden_dim, hidden_dim),
-            ReLU()
+        self.gnn = GraphSAGE(
+            in_channels=num_node_features,
+            hidden_channels=hidden_dim,
+            num_layers=num_layers,
+            out_channels=hidden_dim, # On ressort à hidden_dim pour la Tête
+            dropout=0.0,
+            act='relu' # La fonction d'activation interne
         )
-        self.conv1 = GINEConv(nn1, edge_dim=edge_dim)
-        
-        # ---------------------------------------------------------
-        # 2ème COUCHE GINE
-        # ---------------------------------------------------------
-        nn2 = Sequential(
-            Linear(hidden_dim, hidden_dim),
-            BatchNorm1d(hidden_dim),
-            ReLU(),
-            Linear(hidden_dim, hidden_dim),
-            ReLU()
-        )
-        self.conv2 = GINEConv(nn2, edge_dim=edge_dim)
         
         # ---------------------------------------------------------
         # TÊTE DE RÉGRESSION (Pour prédire J*)
+        # (Inchangée par rapport à ton code GINE)
         # ---------------------------------------------------------
         self.mlp_readout = Sequential(
             Linear(hidden_dim, hidden_dim // 2),
@@ -223,20 +215,24 @@ class GINE_JStar_Predictor(torch.nn.Module):
         """
         x: Caractéristiques des noeuds [Nombre total de noeuds, 9]
         edge_index: Connexions [2, Nombre total d'arêtes]
-        edge_attr: Poids des arêtes [Nombre total d'arêtes, 1]
         batch: Vecteur qui indique quel noeud appartient à quel graphe
         """
-        x = self.conv1(x, edge_index, edge_attr)
-        x = self.conv2(x, edge_index, edge_attr)
+        # GraphSAGE propage l'information dans le graphe
+        # Note : On ignore edge_attr car le GraphSAGE standard ne l'utilise pas 
+        # (et ils valaient tous 1.0 de toute façon)
+        x = self.gnn(x, edge_index)
         
+        # Pooling global (résume tous les noeuds en 1 seul vecteur par graphe)
         x_graph = global_mean_pool(x, batch) 
+        
+        # Prédiction finale
         out = self.mlp_readout(x_graph)
         
         return out
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Entrainement GINE pour predire J*")
+    parser = argparse.ArgumentParser(description="Entrainement GraphSAGE pour predire J*")
     parser.add_argument("--save-last-model", type=str, default=SAVE_LAST_MODEL_PATH,
                         help="Chemin de sauvegarde du dernier modele (desactive si vide)")
     parser.add_argument("--save-best-model", type=str, default=SAVE_BEST_MODEL_PATH,
@@ -270,7 +266,8 @@ if __name__ == "__main__":
         }
     )
 
-    model = GINE_JStar_Predictor()
+    # Initialisation du nouveau modèle
+    model = GraphSAGE_JStar_Predictor()
 
     train_val_dataset = ReliabilityDataset(
         json_file=TRAIN_JSON,
@@ -303,7 +300,6 @@ if __name__ == "__main__":
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
     benchmark_loader = DataLoader(benchmark_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    # Definition de la fonction de perte et de l'optimiseur
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
@@ -319,7 +315,6 @@ if __name__ == "__main__":
 
     best_val_loss = float("inf")
 
-    # Entraînement du modèle
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
@@ -368,7 +363,6 @@ if __name__ == "__main__":
             "config": run.config.as_dict(),
         }, save_last_model)
 
-    # --- Évaluation finale sur le benchmark fixe (MSE + MAE) ---
     model.eval()
     all_preds = []
     all_targets = []
@@ -395,4 +389,3 @@ if __name__ == "__main__":
     if save_last_model is not None:
         wandb.summary["last_model_path"] = save_last_model
     wandb.finish()
-

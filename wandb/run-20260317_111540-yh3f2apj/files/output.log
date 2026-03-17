@@ -1,0 +1,19 @@
+Datasets | train_val=9000 | benchmark=900
+Epoch 10/120 | train_loss=0.022069 | val_loss=0.022587 | val_mae=0.092148
+Epoch 20/120 | train_loss=0.019377 | val_loss=0.018944 | val_mae=0.083727
+Epoch 30/120 | train_loss=0.016968 | val_loss=0.017461 | val_mae=0.080838
+Epoch 40/120 | train_loss=0.015955 | val_loss=0.016052 | val_mae=0.077149
+Epoch 50/120 | train_loss=0.015137 | val_loss=0.015204 | val_mae=0.073985
+Epoch 60/120 | train_loss=0.014424 | val_loss=0.015019 | val_mae=0.072433
+Epoch 70/120 | train_loss=0.014100 | val_loss=0.015206 | val_mae=0.072851
+Epoch 80/120 | train_loss=0.013701 | val_loss=0.014541 | val_mae=0.070995
+Epoch 90/120 | train_loss=0.013546 | val_loss=0.014200 | val_mae=0.069371
+Epoch 100/120 | train_loss=0.013266 | val_loss=0.014315 | val_mae=0.071922
+Epoch 110/120 | train_loss=0.013026 | val_loss=0.014832 | val_mae=0.071454
+Epoch 120/120 | train_loss=0.012842 | val_loss=0.013998 | val_mae=0.069337
+Final metrics | node_mae=0.0696 | budget_viol=0/900 (mean_err=2.14e-07) | terminal_max=0.00e+00
+Modele sauvegarde: checkpoints/graphsage_b_V7fusion.pt
+Calcul deltaJ...
+deltaJ: 0/50
+deltaJ | abs_mean=0.000683 | rel_mean=0.25%
+deltaJ done | abs_mean=0.000683 | rel_mean=0.25%

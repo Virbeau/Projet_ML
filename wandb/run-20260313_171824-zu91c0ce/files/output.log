@@ -1,0 +1,12 @@
+Datasets | train_val=9000 | benchmark=900
+Traceback (most recent call last):
+  File "/users/local/l24virbe/Projet_ML/GINE_B_repartition.py", line 574, in <module>
+    loss.backward()
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/_tensor.py", line 630, in backward
+    torch.autograd.backward(
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/autograd/__init__.py", line 364, in backward
+    _engine_run_backward(
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/autograd/graph.py", line 865, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

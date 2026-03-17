@@ -68,12 +68,18 @@ def process_single_instance(args):
     Fonction worker sans filtre de jouabilité.
     Boucle uniquement pour gérer les rares cas pathologiques (pas de chemin valide).
     """
-    base_seed, graph_type, params, H, iters = args
+    if len(args) == 6:
+        base_seed, graph_type, params, H, iters, max_repairable = args
+    else:
+        base_seed, graph_type, params, H, iters = args
+        max_repairable = None
+    instance_t0 = time.time()
     attempt = 0
     MAX_ATTEMPTS = 200
 
     G = record = graph_label = None
     C_min_path = alpha = B = J_min = J_max = pi_star = J_star = L = None
+    solve_opt_seconds = None
     c_cost_repairable = None
     params_solver = None
     repairable_nodes = terminals = source = target = None
@@ -99,6 +105,9 @@ def process_single_instance(args):
         terminals = record["terminals"]
         source, target = terminals[0], terminals[-1]
         repairable_nodes = record["repairable_nodes"]
+        if max_repairable is not None and len(repairable_nodes) > int(max_repairable):
+            # Instance trop grande pour le solveur exact (complexite exponentielle en noeuds reparables)
+            continue
         
         p_fail_repairable = np.array([record["features"][v]["p_fail"] for v in repairable_nodes])
         c_cost_repairable = np.array([record["features"][v]["c_cost"] for v in repairable_nodes])
@@ -141,10 +150,12 @@ def process_single_instance(args):
         B = round(max(0.0, alpha * C_total), 2)
         
         # 4. Résolution Finale avec le vrai budget B
+        solve_t0 = time.time()
         pi_star, J_star, _, _ = solve_instance(
             G=G, terminals=terminals, criterion="terminal_connectivity", 
             params=params_solver, H=H, B=B, iters=iters
         )
+        solve_opt_seconds = float(time.time() - solve_t0)
         
         L = nx.shortest_path_length(G, source=source, target=target)
         break
@@ -155,10 +166,12 @@ def process_single_instance(args):
         mean_p_fail = float(np.mean(p_fail_repairable)) if p_fail_repairable is not None and len(p_fail_repairable) > 0 else None
         alpha = get_budget_alpha(graph_type, mean_p_fail=mean_p_fail)
         B = round(max(0.0, alpha * C_total), 2)
+        solve_t0 = time.time()
         pi_star, J_star, _, _ = solve_instance(
             G=G, terminals=terminals, criterion="terminal_connectivity",
             params=params_solver, H=H, B=B, iters=iters
         )
+        solve_opt_seconds = float(time.time() - solve_t0)
         J_min = J_max = float(J_star)
         L = nx.shortest_path_length(G, source=source, target=target)
         C_total = float(np.sum(c_cost_repairable)) if c_cost_repairable is not None else 1.0
@@ -196,6 +209,8 @@ def process_single_instance(args):
         "shortest_path_length": int(L),
         "H": int(H),
         "attempts_needed": attempt, # Info debug
+        "solve_opt_seconds": float(solve_opt_seconds) if solve_opt_seconds is not None else None,
+        "instance_total_seconds": float(time.time() - instance_t0),
         "J_min": float(J_min),
         "J_max": float(J_max),
         "graph": {

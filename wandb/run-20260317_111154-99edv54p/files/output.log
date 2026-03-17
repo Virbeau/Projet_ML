@@ -1,0 +1,50 @@
+Train/val dataset: 9000 graphes
+Benchmark fixe: 900 graphes
+Epoch 1/120, Train Loss: 0.0348, Val Loss: 0.0148, Benchmark Loss: 0.0152
+Epoch 2/120, Train Loss: 0.0115, Val Loss: 0.0082, Benchmark Loss: 0.0087
+Epoch 3/120, Train Loss: 0.0073, Val Loss: 0.0062, Benchmark Loss: 0.0068
+Epoch 4/120, Train Loss: 0.0057, Val Loss: 0.0048, Benchmark Loss: 0.0052
+Traceback (most recent call last):
+  File "/users/local/l24virbe/Projet_ML/GraphSAGE_J_predictor.py", line 329, in <module>
+    val_loss = evaluate(val_loader)
+               ^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/GraphSAGE_J_predictor.py", line 311, in evaluate
+    pred = model(batch.x, batch.edge_index, batch.edge_attr, batch.batch)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/GraphSAGE_J_predictor.py", line 223, in forward
+    x = self.gnn(x, edge_index)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch_geometric/nn/models/basic_gnn.py", line 256, in forward
+    x = conv(x, edge_index)
+        ^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch_geometric/nn/conv/sage_conv.py", line 139, in forward
+    out = out + self.lin_r(x_r)
+                ^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/torch_geometric/nn/dense/linear.py", line 127, in forward
+    return F.linear(x, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

@@ -1,0 +1,78 @@
+_wandb:
+    value:
+        cli_version: 0.25.1
+        e:
+            r6wgzty4adhhyjbwh5dw0hmwzyyajkfz:
+                codePath: GINE_J_predictor.py
+                codePathLocal: GINE_J_predictor.py
+                cpu_count: 4
+                cpu_count_logical: 4
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "105089261568"
+                        used: "73342984192"
+                email: louis.virbel@imt-atlantique.net
+                executable: /users/local/l24virbe/Projet_ML/env_projet/bin/python3
+                git:
+                    commit: b8f3045fb295150901c0f5a11bd90a23883bfda6
+                    remote: https://github.com/Virbeau/Projet_ML.git
+                gpu: NVIDIA GeForce GTX 1060 6GB
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Pascal
+                      cudaCores: 1280
+                      memoryTotal: "6442450944"
+                      name: NVIDIA GeForce GTX 1060 6GB
+                      uuid: GPU-48803455-90bf-fd7e-0a00-28ba6b2c97b1
+                host: sl-tp-br-506
+                memory:
+                    total: "8288677888"
+                os: Linux-6.8.0-101-generic-x86_64-with-glibc2.39
+                program: /users/local/l24virbe/Projet_ML/GINE_J_predictor.py
+                python: CPython 3.12.3
+                root: /users/local/l24virbe/Projet_ML
+                startedAt: "2026-03-13T17:29:54.190405Z"
+                writerId: r6wgzty4adhhyjbwh5dw0hmwzyyajkfz
+        m: []
+        python_version: 3.12.3
+        t:
+            "1":
+                - 1
+                - 77
+            "2":
+                - 1
+                - 77
+            "3":
+                - 13
+                - 16
+            "4": 3.12.3
+            "5": 0.25.1
+            "12": 0.25.1
+            "13": linux-x86_64
+batch_size:
+    value: 32
+benchmark_json:
+    value: fusion_testsetV7.json
+benchmark_jstar_max:
+    value: null
+benchmark_jstar_min:
+    value: null
+epochs:
+    value: 120
+lr:
+    value: 0.001
+save_best_model:
+    value: checkpoints/gine_j_spV7fusion.pt
+save_last_model:
+    value: null
+split_seed:
+    value: 42
+train_json:
+    value: datasetV7_sp.json
+train_jstar_max:
+    value: null
+train_jstar_min:
+    value: null
+wandb_group:
+    value: Gine_J_V7

@@ -1,0 +1,65 @@
+Datasets | train_val=9000 | benchmark=900
+Epoch 10/120 | train_loss=0.025169 | val_loss=0.024939 | val_mae=0.101600
+Epoch 20/120 | train_loss=0.020996 | val_loss=0.020458 | val_mae=0.088603
+Epoch 30/120 | train_loss=0.019445 | val_loss=0.018659 | val_mae=0.082836
+Epoch 40/120 | train_loss=0.018377 | val_loss=0.018778 | val_mae=0.083659
+Epoch 50/120 | train_loss=0.017649 | val_loss=0.017457 | val_mae=0.078874
+Epoch 60/120 | train_loss=0.017008 | val_loss=0.016815 | val_mae=0.078210
+Epoch 70/120 | train_loss=0.016605 | val_loss=0.017242 | val_mae=0.078506
+Epoch 80/120 | train_loss=0.016214 | val_loss=0.016343 | val_mae=0.076151
+Epoch 90/120 | train_loss=0.016009 | val_loss=0.016979 | val_mae=0.078394
+Epoch 100/120 | train_loss=0.015775 | val_loss=0.015933 | val_mae=0.075352
+Epoch 110/120 | train_loss=0.015538 | val_loss=0.016557 | val_mae=0.077572
+Epoch 120/120 | train_loss=0.015311 | val_loss=0.016027 | val_mae=0.076236
+Final metrics | node_mae=0.0769 | budget_viol=0/900 (mean_err=1.97e-07) | terminal_max=0.00e+00
+Modele sauvegarde: checkpoints/gine_b_repartition_v7.pt
+Calcul deltaJ...
+deltaJ: 0/900
+deltaJ: 200/900
+deltaJ: 400/900
+deltaJ: 600/900
+Traceback (most recent call last):
+  File "/users/local/l24virbe/Projet_ML/GINE_B_repartition.py", line 654, in <module>
+    delta_metrics = evaluate_industrial_regret(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/GINE_B_repartition.py", line 333, in evaluate_industrial_regret
+    J_gnn = simulate_monte_carlo(inst_to_simulate, n_sims=n_sims)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/monte_carlo_validation.py", line 62, in simulate_monte_carlo
+    if not fast_is_connected(G, source, target, up_rep_nodes):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/monte_carlo_validation.py", line 15, in fast_is_connected
+    return nx.has_path(subG, source, target)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<class 'networkx.utils.decorators.argmap'> compilation 8", line 3, in argmap_has_path_5
+    import gzip
+            ^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/utils/backends.py", line 551, in _call_if_no_backends_installed
+    return self.orig_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/algorithms/shortest_paths/generic.py", line 36, in has_path
+    nx.shortest_path(G, source, target)
+  File "<class 'networkx.utils.decorators.argmap'> compilation 12", line 3, in argmap_shortest_path_9
+    import gzip
+            ^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/utils/backends.py", line 551, in _call_if_no_backends_installed
+    return self.orig_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/algorithms/shortest_paths/generic.py", line 173, in shortest_path
+    paths = nx.bidirectional_shortest_path(G, source, target)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<class 'networkx.utils.decorators.argmap'> compilation 16", line 3, in argmap_bidirectional_shortest_path_13
+    import gzip
+            ^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/utils/backends.py", line 551, in _call_if_no_backends_installed
+    return self.orig_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/algorithms/shortest_paths/unweighted.py", line 273, in bidirectional_shortest_path
+    results = _bidirectional_pred_succ(G, source, target)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/algorithms/shortest_paths/unweighted.py", line 324, in _bidirectional_pred_succ
+    for w in Gsucc[v]:
+  File "/users/local/l24virbe/Projet_ML/env_projet/lib/python3.12/site-packages/networkx/classes/coreviews.py", line 300, in <genexpr>
+    return (n for n in self._atlas if self.NODE_OK(n))
+
+KeyboardInterrupt

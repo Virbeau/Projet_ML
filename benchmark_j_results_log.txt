@@ -1,0 +1,19 @@
+nohup: les entrées sont ignorées
+Benchmark sans solveur | instances=40 | nodes=[30,60] | H=25 | mc_sims=3000
+[4/40] MAE courant=0.2034 | pred_ms=1.10 | mc_ms=3299.77
+[8/40] MAE courant=0.2162 | pred_ms=3.80 | mc_ms=3168.32
+[12/40] MAE courant=0.2843 | pred_ms=3.70 | mc_ms=3221.27
+[16/40] MAE courant=0.2731 | pred_ms=2.99 | mc_ms=3356.30
+[20/40] MAE courant=0.2844 | pred_ms=2.56 | mc_ms=3345.86
+[24/40] MAE courant=0.2896 | pred_ms=6.09 | mc_ms=3380.06
+[28/40] MAE courant=0.2727 | pred_ms=10.88 | mc_ms=3427.60
+[32/40] MAE courant=0.2772 | pred_ms=11.08 | mc_ms=3436.65
+[36/40] MAE courant=0.3106 | pred_ms=13.20 | mc_ms=3468.14
+[40/40] MAE courant=0.3035 | pred_ms=16.48 | mc_ms=3462.18
+========================================================================
+Benchmark termine (sans solveur)
+MAE(pred, MC): 0.30352 | RMSE: 0.43771 | Corr: 0.1911
+Temps moyen modele: 16.483 ms
+Temps moyen Monte-Carlo: 3462.182 ms
+Accelaration moyenne (MC / modele): x2970.4
+Resultats ecrits dans: benchmark_j_no_solver_complex_results.json
