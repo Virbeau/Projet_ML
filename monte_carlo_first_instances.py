@@ -1,75 +1,75 @@
-#!/usr/bin/env python3
-"""
-Script pour valider et enregistrer les résultats Monte-Carlo 
 pour les premières instances d'un dataset.
 
-Usage:
+#!/usr/bin/env python3
+"""
+Script pour valider et enregistrer les résultats Monte-Carlo sur les premières instances d'un dataset.
+
+Usage :
     python monte_carlo_first_instances.py --first-n 10
     python monte_carlo_first_instances.py --dataset dataset_hybrid_mesh_sp_er.json --first-n 5
 """
 
+# Importation des bibliothèques pour la gestion JSON, les arguments et les chemins de fichiers
 import json
 import argparse
 from pathlib import Path
+# Import des fonctions utilitaires de validation Monte-Carlo
 from main_monte_carlo_validation import validate_dataset, save_results, print_results
+
 
 def validate_first_instances(dataset_path, first_n=10, n_sims=10000):
     """
-    Valide les N premières instances d'un dataset et enregistre les résultats.
-    
-    Args:
-        dataset_path: Chemin vers le dataset
-        first_n: Nombre de premières instances à valider
-        n_sims: Nombre de simulations Monte-Carlo par instance
+    Valide les N premières instances d'un dataset et enregistre les résultats Monte-Carlo.
+    Args :
+        dataset_path : chemin vers le dataset
+        first_n : nombre d'instances à valider
+        n_sims : nombre de simulations Monte-Carlo par instance
     """
     print(f"\n🔍 Chargement du dataset: {dataset_path}")
-    
+
     with open(dataset_path, 'r') as f:
         data = json.load(f)
-    
+
     all_instances = data["instances"]
     print(f"   Total d'instances dans le dataset: {len(all_instances)}")
-    
+
     if first_n > len(all_instances):
         print(f"   ⚠️  Seules {len(all_instances)} instances disponibles (au lieu de {first_n})")
         first_n = len(all_instances)
-    
+
     print(f"   Validation des {first_n} premières instances...")
     print(f"   Simulations par instance: {n_sims}\n")
-    
-    # Créer une copie temporaire du dataset avec seulement les N premières instances
+
+    # Création d'une copie temporaire du dataset avec seulement les N premières instances
     temp_data = data.copy()
     temp_data["instances"] = all_instances[:first_n]
-    
-    # Créer un fichier temporaire
+
+    # Création d'un fichier temporaire pour la validation
     temp_path = Path(dataset_path).stem + f"_first_{first_n}_temp.json"
     with open(temp_path, 'w') as f:
         json.dump(temp_data, f)
     try:
-        # Lancer la validation
+        # Lancer la validation Monte-Carlo
         results = validate_dataset(
             temp_path,
-            sample_size=None,  # Utiliser toutes les instances du dataset temp
+            sample_size=None,  # Utilise toutes les instances du dataset temporaire
             n_sims=n_sims,
             verbose=True
         )
-        
-        # Afficher les résultats
+
+        # Affichage et sauvegarde des résultats
         print_results(results)
-        
-        # Sauvegarder les résultats avec un nom explicite
         timestamp = Path(save_results(results)).stem
         output_filename = f"mc_validation_first_{first_n}_{timestamp}.json"
-        
+
         with open(output_filename, 'w') as f:
             json.dump(results, f, indent=2)
-        
+
         print(f"\n✅ Résultats sauvegardés: {output_filename}\n")
-        
         return results, output_filename
-        
+
     finally:
-        # Nettoyer le fichier temporaire
+        # Nettoyage du fichier temporaire
         if Path(temp_path).exists():
             Path(temp_path).unlink()
 

@@ -1,38 +1,42 @@
-# --- Imports ---
+
+# Importation des bibliothèques pour le calcul numérique, la manipulation de graphes, l'optimisation et l'accélération JIT
 import numpy as np
 import networkx as nx
 from numba import jit
 from scipy.optimize import minimize
 
-# On enlève matplotlib car on fait tourner ça sur un serveur/VM en tâche de fond
+# Configuration de l'affichage NumPy (précision et suppression de la notation scientifique)
 np.set_printoptions(precision=3, suppress=True)
 
 
-# --- Fonctions Utilitaires Manquantes ---
+
+# --- Fonctions utilitaires pour la manipulation de bits et la connectivité ---
 @jit(nopython=True)
 def int_to_bits(s, m):
-    """Version ultra-rapide avec Numba JIT (manipulation de bits pure)"""
+    """
+    Convertit un entier en un tableau de bits (représentation binaire), optimisé avec Numba JIT.
+    """
     bits = np.zeros(m, dtype=np.int32)
     for i in range(m):
         bits[m - 1 - i] = (s >> i) & 1
     return bits
 
 
-# --- Critère d'évaluation (Adapté pour les Graphes Orientés / Mesh) ---
+
+# --- Critère d'évaluation de la connectivité terminale ---
 def phi_terminal_connectivity(G_res, terminals):
     """
-    Vérifie si la Source (terminals[0]) peut toujours joindre la Cible (terminals[-1]).
-    G_res est le sous-graphe contenant uniquement les noeuds qui ne sont PAS en panne.
+    Vérifie si la source (terminals[0]) peut joindre la cible (terminals[-1]) dans le sous-graphe donné.
     """
     source = terminals[0]
     target = terminals[-1]
-    
-    # Si la source ou la cible est crashée (ne devrait pas arriver, ils sont parfaits)
+
+    # Vérifie la présence des terminaux dans le sous-graphe
     if source not in G_res or target not in G_res:
         return 0
-        
+
     try:
-        # nx.has_path gère parfaitement les graphes orientés (DAGs et Mesh)
+        # Utilise NetworkX pour vérifier l'existence d'un chemin orienté
         return 1 if nx.has_path(G_res, source, target) else 0
     except nx.NetworkXNoPath:
         return 0

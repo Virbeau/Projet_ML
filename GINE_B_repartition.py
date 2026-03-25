@@ -1,3 +1,5 @@
+
+# Importation des bibliothèques pour la gestion des données, l'entraînement de modèles GNN et le suivi d'expérience
 import json
 import os
 import torch
@@ -9,18 +11,19 @@ from torch_geometric.nn import GINEConv, global_add_pool
 from torch_geometric.loader import DataLoader
 import numpy as np
 
-# --- Configuration ---
-TRAIN_JSON = "datasetV7_mesh.json"
+
+# --- Configuration des chemins, hyperparamètres et options d'entraînement ---
+TRAIN_JSON = "datasetV7_mesh.json"  # Fichier de données d'entraînement
 TRAIN_CLEAN_INVALID_EDGES = True
 TRAIN_JSTAR_MIN = None
 TRAIN_JSTAR_MAX = None
 
-BENCHMARK_JSON = "fusion_testsetV7.json"
+BENCHMARK_JSON = "fusion_testsetV7.json"  # Fichier de données de benchmark
 BENCHMARK_CLEAN_INVALID_EDGES = True
 BENCHMARK_JSTAR_MIN = None
 BENCHMARK_JSTAR_MAX = None
 
-TRAIN_VAL_SPLIT = 0.8
+TRAIN_VAL_SPLIT = 0.8  # Proportion d'entraînement/validation
 SPLIT_SEED = 42
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
@@ -34,8 +37,14 @@ DELTAJ_N_SIMS = 1000
 DELTAJ_MAX_INSTANCES = 50
 BUDGET_TOL = 1e-4
 
-# --- Fonctions Utilitaires ---
+def split_valid_instances(instances):
+def filter_instances_by_jstar(instances, jstar_min=None, jstar_max=None):
+
+# --- Fonctions utilitaires pour la validation et le filtrage des instances de graphes ---
 def is_valid_instance(inst):
+    """
+    Vérifie la validité d'une instance de graphe (cohérence des nœuds et arêtes).
+    """
     x = inst.get("x", [])
     num_nodes = len(x)
     if num_nodes == 0:
@@ -45,7 +54,7 @@ def is_valid_instance(inst):
     nodes = graph_info.get("nodes")
     edges = graph_info.get("edges", [])
 
-    # Accepte des IDs de noeuds non contigus tant que les aretes restent coherentes.
+    # Accepte des IDs de nœuds non contigus tant que les arêtes restent cohérentes
     if isinstance(nodes, list) and len(nodes) == num_nodes:
         node_set = set(nodes)
         for src, dst in edges:
@@ -57,8 +66,10 @@ def is_valid_instance(inst):
                 return False
     return True
 
-
 def split_valid_instances(instances):
+    """
+    Sépare les instances valides des invalides dans une liste d'instances.
+    """
     valid_instances = []
     invalid_count = 0
     for inst in instances:
@@ -68,8 +79,10 @@ def split_valid_instances(instances):
             invalid_count += 1
     return valid_instances, invalid_count
 
-
 def filter_instances_by_jstar(instances, jstar_min=None, jstar_max=None):
+    """
+    Filtre les instances selon les bornes J* (si spécifiées).
+    """
     if jstar_min is None and jstar_max is None:
         return instances, 0
 

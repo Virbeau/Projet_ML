@@ -1,3 +1,5 @@
+
+# Importation des bibliothèques pour la gestion des arguments, JSON, aléatoire, temps, parallélisme et calcul numérique
 import argparse
 import json
 import random
@@ -7,17 +9,19 @@ from multiprocessing import Pool, cpu_count
 
 import numpy as np
 
+# Import d'une fonction utilitaire pour traiter une instance
 from main_production import process_single_instance
 
-
+# Importation optionnelle de tqdm pour la barre de progression
 try:
     from tqdm import tqdm
-
     HAS_TQDM = True
 except ImportError:
     HAS_TQDM = False
 
 
+
+# Configurations de tailles/types de graphes pour chaque famille (Mesh, SP, ER) et leurs poids de sélection
 MESH_CONFIGS = [
     ((2, 2), 20),
     ((2, 3), 25),
@@ -58,6 +62,9 @@ ER_WEIGHTS = [0.12, 0.12, 0.15, 0.18, 0.18, 0.12, 0.08, 0.03, 0.02]
 
 
 def _sample_task(family, mode, rng, min_nodes=15, max_nodes=20):
+    """
+    Génère une configuration de tâche pour une famille de graphes donnée, selon le mode (benchmark ou autre).
+    """
     if mode == "benchmark":
         if family == "er":
             num_nodes = rng.randint(min_nodes, max_nodes)
@@ -72,7 +79,7 @@ def _sample_task(family, mode, rng, min_nodes=15, max_nodes=20):
         mesh_candidates = [(2, 7), (7, 2), (3, 5), (4, 4), (3, 6), (4, 5)]
         feasible = [sh for sh in mesh_candidates if min_nodes <= sh[0] * sh[1] <= max_nodes]
         if not feasible:
-            # Prendre la shape la plus proche sans depasser max_nodes si possible.
+            # Prend la forme la plus proche sans dépasser max_nodes si possible
             below = [sh for sh in mesh_candidates if sh[0] * sh[1] <= max_nodes]
             feasible = below if below else [min(mesh_candidates, key=lambda sh: sh[0] * sh[1])]
         mesh_shape = rng.choice(feasible)
