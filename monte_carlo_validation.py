@@ -1,14 +1,17 @@
+
+# Importation des bibliothèques pour la gestion JSON, l'aléatoire, le calcul numérique, la manipulation de graphes et la barre de progression
 import json
 import random
 import numpy as np
 import networkx as nx
 from tqdm import tqdm
 
+
 def fast_is_connected(G_base, source, target, up_nodes):
     """
-    Vérifie la connectivité sur le sous-graphe des noeuds fonctionnels.
+    Vérifie la connectivité entre la source et la cible sur le sous-graphe des nœuds fonctionnels.
     """
-    # Les terminaux sont toujours UP
+    # Les terminaux sont toujours considérés comme fonctionnels
     valid_nodes = set(up_nodes) | {source, target}
     subG = G_base.subgraph(valid_nodes)
     try:

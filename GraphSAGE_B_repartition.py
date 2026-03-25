@@ -1,3 +1,5 @@
+
+# Importation des bibliothèques pour la gestion des données, l'entraînement de modèles GNN et le suivi d'expérience
 import json
 import os
 import torch
@@ -10,18 +12,19 @@ from torch_geometric.nn import GraphSAGE, global_add_pool
 from torch_geometric.loader import DataLoader
 import numpy as np
 
-# --- Configuration ---
-TRAIN_JSON = "fusionV7.json"
+
+# --- Configuration des chemins, hyperparamètres et options d'entraînement ---
+TRAIN_JSON = "fusionV7.json"  # Fichier de données d'entraînement
 TRAIN_CLEAN_INVALID_EDGES = True
 TRAIN_JSTAR_MIN = None
 TRAIN_JSTAR_MAX = None
 
-BENCHMARK_JSON = "fusion_testsetV7.json"
+BENCHMARK_JSON = "fusion_testsetV7.json"  # Fichier de données de benchmark
 BENCHMARK_CLEAN_INVALID_EDGES = True
 BENCHMARK_JSTAR_MIN = None
 BENCHMARK_JSTAR_MAX = None
 
-TRAIN_VAL_SPLIT = 0.8
+TRAIN_VAL_SPLIT = 0.8  # Proportion d'entraînement/validation
 SPLIT_SEED = 42
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
@@ -37,8 +40,12 @@ DELTAJ_N_SIMS = 1000
 DELTAJ_MAX_INSTANCES = 50
 BUDGET_TOL = 1e-4
 
-# --- Fonctions Utilitaires (Inchangées) ---
+
+# --- Fonctions utilitaires pour la validation et le filtrage des instances de graphes ---
 def is_valid_instance(inst):
+    """
+    Vérifie la validité d'une instance de graphe (cohérence des nœuds et arêtes).
+    """
     x = inst.get("x", [])
     num_nodes = len(x)
     if num_nodes == 0:
